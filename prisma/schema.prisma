@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+    provider = "prisma-client"
+    output   = "../src/generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model User {
+    id            String         @id @unique @default(uuid())
+    name          String
+    email         String         @unique
+    bio           String?
+    workout_plan  Workout_Plan[]
+    emailVerified Boolean        @default(false)
+    image         String?
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+    sessions      Session[]
+    accounts      Account[]
+
+    @@map("user")
+}
+
+model Session {
+    id        String   @id
+    expiresAt DateTime
+    token     String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    ipAddress String?
+    userAgent String?
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([token])
+    @@index([userId])
+    @@map("session")
+}
+
+model Account {
+    id                    String    @id
+    accountId             String
+    providerId            String
+    userId                String
+    user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    accessToken           String?
+    refreshToken          String?
+    idToken               String?
+    accessTokenExpiresAt  DateTime?
+    refreshTokenExpiresAt DateTime?
+    scope                 String?
+    password              String?
+    createdAt             DateTime  @default(now())
+    updatedAt             DateTime  @updatedAt
+
+    @@index([userId])
+    @@map("account")
+}
+
+model Verification {
+    id         String   @id
+    identifier String
+    value      String
+    expiresAt  DateTime
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@index([identifier])
+    @@map("verification")
+}
+
+model Workout_Plan {
+    id           String     @id @unique @default(uuid())
+    day          String
+    time         DateTime
+    muscle_group String
+    exercises    Exercise[]
+    user         User?      @relation(fields: [userId], references: [id])
+    userId       String?
+
+    @@map("workout_plan")
+}
+
+model Exercise {
+    id             String        @id @default(uuid())
+    workoutPlan    Workout_Plan? @relation(fields: [workout_PlanId], references: [id])
+    workout_PlanId String?
+    exercise_name  String
+    exercise_video String?
+    exercise_icon  String?
+    repetition     Int
+    sets           Int
+
+    @@map("exercies")
+}
+
+model Food_Items {
+    id                    String                  @id
+    food_image            String?
+    food_name             String
+    calorie_value         String
+    nutrition_information Nutrition_Information[]
+    mealTime              Meal_Time?              @relation(fields: [meal_TimeId], references: [id])
+    meal_TimeId           String?
+
+    @@map("food_items")
+}
+
+model Nutrition_Information {
+    id                 String      @id
+    name               String
+    nutrition_qunatity String
+    foodItems          Food_Items? @relation(fields: [food_ItemsId], references: [id])
+    food_ItemsId       String?
+
+    @@map("nutrition")
+}
+
+model Meal_Time {
+    id         String       @id @default(uuid())
+    time_name  String
+    food_items Food_Items[]
+}
+
+model Diet {
+    id String @id
+}
