@@ -1,0 +1,21 @@
+# build output
+dist
+coverage
+
+# dependencies & lockfiles
+node_modules
+bun.lock
+bun.lockb
+
+# generated code
+src/generated
+prisma/migrations
+
+# vendored agent skills / tooling internals
+.agents
+.claude
+.husky/_
+skills-lock.json
+
+# env
+.env*

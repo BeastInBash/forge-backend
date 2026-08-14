@@ -1,0 +1,61 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "promise", "node"],
+  "env": {
+    "es2024": true,
+    "node": true
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "ignorePatterns": [
+    "dist",
+    "coverage",
+    "src/generated",
+    "prisma/migrations",
+    ".agents",
+    ".husky/_"
+  ],
+  "rules": {
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrors": "all",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
+    "typescript/consistent-type-imports": [
+      "error",
+      { "prefer": "type-imports", "fixStyle": "inline-type-imports" }
+    ],
+    "typescript/no-explicit-any": "warn",
+    "typescript/no-extraneous-class": "off",
+    "import/no-unassigned-import": "off",
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+    "promise/no-return-wrap": "error",
+    "promise/param-names": "error",
+    "import/no-duplicates": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "smart"]
+  },
+  "overrides": [
+    {
+      "files": ["src/server.ts", "src/lib/env.ts", "prisma.config.ts"],
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.spec.ts"],
+      "rules": {
+        "no-console": "off",
+        "typescript/no-explicit-any": "off"
+      }
+    }
+  ]
+}

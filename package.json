@@ -11,27 +11,45 @@
     "db:migrate": "bunx --bun prisma migrate dev",
     "db:deploy": "bunx --bun prisma migrate deploy",
     "db:generate": "bunx --bun prisma generate",
-    "db:studio": "bunx --bun prisma studio"
+    "db:studio": "bunx --bun prisma studio",
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "test": "bun test"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,cjs}": [
+      "oxlint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
     "@types/bun": "latest",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/pg": "^8.21.0",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "prisma": "^7.9.1"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
+    "husky": "^9.1.7",
+    "lint-staged": "^17.3.0",
+    "oxlint": "^1.78.0",
+    "prettier": "^3.9.6",
+    "prisma": "^7.9.1",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "better-auth": "^1.6.27",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "pg": "^8.23.0",
-    "tsx": "^4.23.12",
     "zod": "^4.4.3"
   }
 }
