@@ -1,21 +1,27 @@
-import 'dotenv/config'
-import z from 'zod'
+import 'dotenv/config';
+import z from 'zod';
 
 const envSchema = z.object({
-    NODE_ENV: z.enum(["Development", "Production"]).default("Development"),
+    // Lowercased so "Production" and "production" both work
+    NODE_ENV: z.preprocess(
+        (value) => (typeof value === 'string' ? value.toLowerCase() : value),
+        z.enum(['development', 'production', 'test']).default('development')
+    ),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.string(),
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
-
-})
+    // Comma-separated list of allowed frontend origins
+    CORS_ORIGIN: z.string().default('http://localhost:3000'),
+    // Optional until Google sign-in is enabled in src/lib/auth.ts
+    GOOGLE_CLIENT_ID: z.string().optional(),
+    GOOGLE_CLIENT_SECRET: z.string().optional()
+});
 
 function createEnv(env: NodeJS.ProcessEnv) {
     const safeParsed = envSchema.safeParse(env);
-    if (!safeParsed.success) throw new Error(safeParsed.error.message)
-    return safeParsed.data
+    if (!safeParsed.success) throw new Error(safeParsed.error.message);
+    return safeParsed.data;
 }
 
 export const env = createEnv(process.env);

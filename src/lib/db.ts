@@ -1,5 +1,6 @@
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../generated/prisma/client';
+import { env } from './env';
 
 // 1. Properly declare the global variable type
 declare global {
@@ -10,11 +11,11 @@ declare global {
 export const prisma =
     globalThis.prisma ??
     new PrismaClient({
-        adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+        adapter: new PrismaPg({ connectionString: env.DATABASE_URL })
     });
 
 // 3. Save it to the global object in development to persist across HMR hot-reloads
-if (process.env.NODE_ENV !== 'production') {
+if (env.NODE_ENV !== 'production') {
     globalThis.prisma = prisma;
 }
 
