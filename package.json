@@ -7,6 +7,7 @@
     "dev": "bun --hot ./src/server.ts",
     "build": "bun build ./src/server.ts --target bun --outdir ./dist",
     "start": "bun ./dist/server.js",
+    "vercel-build": "bunx --bun prisma generate && bun build ./src/index.ts --target node --format esm --packages external --outfile ./dist/index.js",
     "typecheck": "tsc --noEmit",
     "db:migrate": "bunx --bun prisma migrate dev",
     "db:deploy": "bunx --bun prisma migrate deploy",
@@ -43,13 +44,16 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@better-auth/expo": "1.6.27",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
+    "@scalar/express-api-reference": "^0.10.26",
     "better-auth": "^1.6.27",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "pg": "^8.23.0",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zod-openapi": "^6.0.2"
   }
 }
