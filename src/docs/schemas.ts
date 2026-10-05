@@ -1,0 +1,84 @@
+import { z } from 'zod';
+
+/**
+ * Response shapes for the OpenAPI document only — nothing validates against
+ * these at runtime. Keep them in step with what the services return.
+ */
+
+export const errorResponseSchema = z
+    .object({
+        success: z.literal(false),
+        message: z.string(),
+        errors: z
+            .array(
+                z.object({
+                    field: z.string(),
+                    message: z.string()
+                })
+            )
+            .optional()
+            .meta({ description: 'Per-field messages, present on validation errors' })
+    })
+    .meta({ id: 'ErrorResponse' });
+
+/** Wraps `data` in the `{ success, message, data }` envelope from ApiResponses. */
+export const successResponse = <T extends z.ZodType>(data: T, id: string) =>
+    z
+        .object({
+            success: z.literal(true),
+            message: z.string(),
+            data
+        })
+        .meta({ id });
+
+export const exerciseResponseSchema = z
+    .object({
+        id: z.uuid(),
+        exercise_name: z.string(),
+        name_key: z
+            .string()
+            .meta({ description: 'Lowercased, trimmed name; unique across the catalog' }),
+        exercise_video: z.string().nullable(),
+        exercise_icon: z.string().nullable(),
+        createdById: z.string().nullable()
+    })
+    .meta({ id: 'Exercise' });
+
+export const workoutExerciseResponseSchema = z
+    .object({
+        id: z.uuid(),
+        workout_PlanId: z.uuid(),
+        exerciseId: z.uuid(),
+        repetition: z.int(),
+        sets: z.int(),
+        order: z.int().meta({ description: 'Position in the plan, starting at 0' }),
+        exercise: exerciseResponseSchema
+    })
+    .meta({ id: 'WorkoutExercise' });
+
+export const workoutPlanResponseSchema = z
+    .object({
+        id: z.uuid(),
+        day: z.string(),
+        time: z.iso.datetime(),
+        muscle_group: z.string(),
+        userId: z.string(),
+        workoutExercises: z.array(workoutExerciseResponseSchema)
+    })
+    .meta({ id: 'WorkoutPlan' });
+
+export const meResponseSchema = z
+    .object({
+        session: z.looseObject({
+            id: z.string(),
+            userId: z.string(),
+            expiresAt: z.iso.datetime()
+        }),
+        user: z.looseObject({
+            id: z.string(),
+            name: z.string(),
+            email: z.email()
+        })
+    })
+    .nullable()
+    .meta({ id: 'MeResponse', description: 'The current session, or null when signed out' });
