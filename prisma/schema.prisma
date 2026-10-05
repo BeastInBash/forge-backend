@@ -24,6 +24,7 @@ model User {
     updatedAt     DateTime       @updatedAt
     sessions      Session[]
     accounts      Account[]
+    exercises     Exercise[]
 
     @@map("user")
 }
@@ -77,28 +78,45 @@ model Verification {
 }
 
 model Workout_Plan {
-    id           String     @id @unique @default(uuid())
-    day          String
-    time         DateTime
-    muscle_group String
-    exercises    Exercise[]
-    user         User?      @relation(fields: [userId], references: [id])
-    userId       String?
+    id               String             @id @unique @default(uuid())
+    day              String
+    time             DateTime
+    muscle_group     String
+    user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId           String
+    workoutExercises Workout_Exercise[]
 
+    @@index([userId])
     @@map("workout_plan")
 }
 
 model Exercise {
-    id             String        @id @default(uuid())
-    workoutPlan    Workout_Plan? @relation(fields: [workout_PlanId], references: [id])
-    workout_PlanId String?
+    id             String             @id @default(uuid())
     exercise_name  String
+    name_key       String             @unique
     exercise_video String?
     exercise_icon  String?
+    createdById    String?
+    createdBy      User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+    workout_items  Workout_Exercise[]
+
+    @@index([createdById])
+    @@map("exercise")
+}
+
+model Workout_Exercise {
+    id             String       @id @default(uuid())
+    workout_PlanId String
+    exerciseId     String
     repetition     Int
     sets           Int
+    order          Int
+    workoutPlan    Workout_Plan @relation(fields: [workout_PlanId], references: [id], onDelete: Cascade)
+    exercise       Exercise     @relation(fields: [exerciseId], references: [id])
 
-    @@map("exercies")
+    @@unique([workout_PlanId, exerciseId])
+    @@index([exerciseId])
+    @@map("workout_exercise")
 }
 
 model Food_Items {
