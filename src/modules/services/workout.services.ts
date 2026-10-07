@@ -10,8 +10,6 @@ import { duplicateCheck } from '../../common/utils/duplicateCheck';
 import { normalizeName } from '../../common/utils/normalizeName';
 import type { Prisma } from '../../generated/prisma/client';
 
-type Tx = Prisma.TransactionClient;
-
 /** What a plan returns: its exercises in order, each with its catalog entry. */
 const planInclude = {
     workoutExercises: {
@@ -21,8 +19,8 @@ const planInclude = {
 } satisfies Prisma.Workout_PlanInclude;
 
 /** A user has at most one plan per weekday. */
-const assertDayFree = async (tx: Tx, userId: string, day: string, exceptPlanId?: string) => {
-    const clash = await tx.workout_Plan.findFirst({
+const assertDayFree = async (userId: string, day: string, exceptPlanId?: string) => {
+    const clash = await prisma.workout_Plan.findFirst({
         where: { userId, day, ...(exceptPlanId && { id: { not: exceptPlanId } }) },
         select: { muscle_group: true }
     });
@@ -35,11 +33,7 @@ const assertDayFree = async (tx: Tx, userId: string, day: string, exceptPlanId?:
  * Turns the request's exercises into join-row data: catalog picks must exist, typed-in names are
  * found or added to the catalog (matched case-insensitively), and no exercise may appear twice.
  */
-const resolveExercises = async (
-    tx: Tx,
-    exercises: WorkoutBodyInput['exercises'],
-    userId: string
-) => {
+const resolveExercises = async (exercises: WorkoutBodyInput['exercises'], userId: string) => {
     const { hasDuplicate, duplicates } = duplicateCheck(exercises);
     if (hasDuplicate) {
         throw ApiError.badRequest(`Duplicate Exercises found ${duplicates.join(', ')}`);
@@ -52,17 +46,17 @@ const resolveExercises = async (
         (exercise): exercise is INewExercise => !('exerciseId' in exercise)
     );
 
-    const foundExercises = await tx.exercise.findMany({
-        where: { id: { in: existingIds } },
-        select: { id: true }
-    });
-    if (foundExercises.length !== existingIds.length) {
+    const foundCount =
+        existingIds.length === 0
+            ? 0
+            : await prisma.exercise.count({ where: { id: { in: existingIds } } });
+    if (foundCount !== existingIds.length) {
         throw ApiError.badRequest('One or more exercises do not exist');
     }
 
     const createdOrFound = await Promise.all(
         newExercises.map((exercise) =>
-            tx.exercise.upsert({
+            prisma.exercise.upsert({
                 where: { name_key: normalizeName(exercise.exercise_name) },
                 update: {},
                 create: {
@@ -104,22 +98,31 @@ const resolveExercises = async (
     return rows;
 };
 
+/*
+ * Writes stay out of long interactive transactions: against a remote database each query is a
+ * full round trip, and a transaction spanning the checks below outlived Prisma's 5 s limit.
+ * The checks run first (in parallel); the plan and its exercise rows are then written by a
+ * single nested create or update, which Prisma applies atomically.
+ * Adding a typed-in exercise to the catalog is safe to keep even if the plan write then fails.
+ */
+
 // Expects a payload already validated by workoutBodySchema plus the session userId
-export const createWorkoutService = async (parsedBody: WorkoutInput) =>
-    prisma.$transaction(async (tx) => {
-        await assertDayFree(tx, parsedBody.userId, parsedBody.day);
-        const rows = await resolveExercises(tx, parsedBody.exercises, parsedBody.userId);
-        return tx.workout_Plan.create({
-            data: {
-                day: parsedBody.day,
-                time: parsedBody.time,
-                muscle_group: parsedBody.muscle_group,
-                user: { connect: { id: parsedBody.userId } },
-                workoutExercises: { create: rows }
-            },
-            include: planInclude
-        });
+export const createWorkoutService = async (parsedBody: WorkoutInput) => {
+    const [, rows] = await Promise.all([
+        assertDayFree(parsedBody.userId, parsedBody.day),
+        resolveExercises(parsedBody.exercises, parsedBody.userId)
+    ]);
+    return prisma.workout_Plan.create({
+        data: {
+            day: parsedBody.day,
+            time: parsedBody.time,
+            muscle_group: parsedBody.muscle_group,
+            user: { connect: { id: parsedBody.userId } },
+            workoutExercises: { create: rows }
+        },
+        include: planInclude
     });
+};
 
 const dayIndex = (day: string) => WEEKDAYS.indexOf(day as (typeof WEEKDAYS)[number]);
 
@@ -134,28 +137,29 @@ export const updateWorkoutService = async (
     workoutId: string,
     body: WorkoutBodyInput,
     userId: string
-) =>
-    prisma.$transaction(async (tx) => {
-        const plan = await tx.workout_Plan.findFirst({
-            where: { id: workoutId, userId },
-            select: { id: true }
-        });
-        if (!plan) throw ApiError.notFound('Workout plan not found');
-
-        await assertDayFree(tx, userId, body.day, workoutId);
-        const rows = await resolveExercises(tx, body.exercises, userId);
-        await tx.workout_Exercise.deleteMany({ where: { workout_PlanId: workoutId } });
-        return tx.workout_Plan.update({
-            where: { id: workoutId },
-            data: {
-                day: body.day,
-                time: body.time,
-                muscle_group: body.muscle_group,
-                workoutExercises: { create: rows }
-            },
-            include: planInclude
-        });
+) => {
+    const plan = await prisma.workout_Plan.findFirst({
+        where: { id: workoutId, userId },
+        select: { id: true }
     });
+    if (!plan) throw ApiError.notFound('Workout plan not found');
+
+    const [, rows] = await Promise.all([
+        assertDayFree(userId, body.day, workoutId),
+        resolveExercises(body.exercises, userId)
+    ]);
+    // One nested write: the old exercise rows are dropped and the new ones created atomically
+    return prisma.workout_Plan.update({
+        where: { id: workoutId },
+        data: {
+            day: body.day,
+            time: body.time,
+            muscle_group: body.muscle_group,
+            workoutExercises: { deleteMany: {}, create: rows }
+        },
+        include: planInclude
+    });
+};
 
 export const deleteWorkoutService = async (workoutId: string, userId: string) => {
     // Scoped to the owner, so another user's id reads as "not found"
