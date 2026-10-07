@@ -10,6 +10,8 @@
 interface IWorkoutExerciseFields {
     repetition: number;
     sets: number;
+    /** Working weight in kg; null or absent for bodyweight. */
+    weight?: number | null;
 }
 
 /** Picked from the dropdown — the exercise already exists in the catalog. */

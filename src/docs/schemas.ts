@@ -51,6 +51,10 @@ export const workoutExerciseResponseSchema = z
         exerciseId: z.uuid(),
         repetition: z.int(),
         sets: z.int(),
+        weight: z
+            .number()
+            .nullable()
+            .meta({ description: 'Working weight in kg; null for bodyweight' }),
         order: z.int().meta({ description: 'Position in the plan, starting at 0' }),
         exercise: exerciseResponseSchema
     })

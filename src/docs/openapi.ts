@@ -5,7 +5,8 @@ import { env } from '../lib/env';
 import {
     createExercisesBodySchema,
     exerciseIdParamsSchema,
-    workoutBodySchema
+    workoutBodySchema,
+    workoutIdParamsSchema
 } from '../common/zodSchema/workoutSchema';
 import {
     errorResponseSchema,
@@ -116,6 +117,77 @@ const createAppDocument = () =>
                     }
                 }
             },
+            '/api/v1/workout': {
+                get: {
+                    tags: ['Workouts'],
+                    summary: "List the user's workout plans",
+                    description: 'One plan per weekday at most, Monday first, exercises in order.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'The plans',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        z.array(workoutPlanResponseSchema),
+                                        'ListWorkoutsResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '500': errorResponse('Unexpected server error')
+                    }
+                }
+            },
+            '/api/v1/workout/{workoutId}': {
+                put: {
+                    tags: ['Workouts'],
+                    summary: 'Replace a workout plan',
+                    description:
+                        "Same body as create; the plan's day, time, muscle group and exercises are replaced. Moving it to a day that already has a plan is a 409.",
+                    security: sessionSecurity,
+                    requestParams: { path: workoutIdParamsSchema },
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: workoutBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Plan updated',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        workoutPlanResponseSchema,
+                                        'UpdateWorkoutResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No plan with that id belongs to this user'),
+                        '409': errorResponse('Another plan already uses that day')
+                    }
+                },
+                delete: {
+                    tags: ['Workouts'],
+                    summary: 'Delete a workout plan',
+                    security: sessionSecurity,
+                    requestParams: { path: workoutIdParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'Plan deleted',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'DeleteWorkoutResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No plan with that id belongs to this user')
+                    }
+                }
+            },
             '/api/v1/workout/create-workout': {
                 post: {
                     tags: ['Workouts'],
@@ -139,7 +211,8 @@ const createAppDocument = () =>
                                 }
                             }
                         },
-                        ...commonErrors
+                        ...commonErrors,
+                        '409': errorResponse('You already have a plan for that day')
                     }
                 }
             },
