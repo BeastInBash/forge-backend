@@ -16,3 +16,15 @@ export const validateBody = (schema: ZodType) => {
         }
     };
 };
+
+/** Like `validateBody`, for route params (`/:exerciseId` and the like). */
+export const validateParams = (schema: ZodType) => {
+    return async (req: Request, _res: Response, next: NextFunction) => {
+        try {
+            req.params = (await schema.parseAsync(req.params)) as Request['params'];
+            next();
+        } catch (error) {
+            next(error);
+        }
+    };
+};

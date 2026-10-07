@@ -15,7 +15,15 @@ const envSchema = z.object({
     CORS_ORIGIN: z.string().default('http://localhost:3000'),
     // Optional until Google sign-in is enabled in src/lib/auth.ts
     GOOGLE_CLIENT_ID: z.string().optional(),
-    GOOGLE_CLIENT_SECRET: z.string().optional()
+    GOOGLE_CLIENT_SECRET: z.string().optional(),
+    // cloudinary://<api_key>:<api_secret>@<cloud_name>; optional until image uploads are used
+    CLOUDINARY_URL: z
+        .string()
+        .regex(
+            /^cloudinary:\/\/[^:]+:[^@]+@.+$/,
+            'Expected cloudinary://<api_key>:<api_secret>@<cloud_name>'
+        )
+        .optional()
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

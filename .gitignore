@@ -36,3 +36,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # prisma generated client
 /src/generated/
+
+# exercise images; uploaded to Cloudinary by `bun run db:seed:exercises`
+/workout_images/*
+!/workout_images/.gitkeep

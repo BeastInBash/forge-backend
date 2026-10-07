@@ -2,10 +2,15 @@ import { z } from 'zod';
 import { createDocument, type ZodOpenApiResponsesObject } from 'zod-openapi';
 import { auth } from '../lib/auth';
 import { env } from '../lib/env';
-import { createExercisesBodySchema, workoutBodySchema } from '../common/zodSchema/workoutSchema';
+import {
+    createExercisesBodySchema,
+    exerciseIdParamsSchema,
+    workoutBodySchema
+} from '../common/zodSchema/workoutSchema';
 import {
     errorResponseSchema,
     exerciseResponseSchema,
+    exerciseSummarySchema,
     meResponseSchema,
     profileResponseSchema,
     successResponse,
@@ -138,6 +143,73 @@ const createAppDocument = () =>
                     }
                 }
             },
+            '/api/v1/exercise': {
+                get: {
+                    tags: ['Exercises'],
+                    summary: 'List the exercise catalog',
+                    description: 'Every exercise, alphabetically, with its image URL.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'The catalog',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        z.array(exerciseSummarySchema),
+                                        'ListExercisesResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '500': errorResponse('Unexpected server error')
+                    }
+                },
+                post: {
+                    tags: ['Exercises'],
+                    summary: 'Add an exercise with its image',
+                    description:
+                        'Multipart form with `exercise_name` and `image` (PNG, JPEG or WebP, max 4 MB). The name is checked for duplicates (ignoring case) before the image is uploaded to Cloudinary.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'multipart/form-data': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['exercise_name', 'image'],
+                                    properties: {
+                                        exercise_name: {
+                                            type: 'string',
+                                            minLength: 1,
+                                            maxLength: 100
+                                        },
+                                        image: { type: 'string', format: 'binary' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Exercise created',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        exerciseResponseSchema,
+                                        'CreateExerciseResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '409': errorResponse('An exercise with that name already exists'),
+                        '413': errorResponse('Image is larger than 4 MB'),
+                        '502': errorResponse('Cloudinary rejected the upload'),
+                        '503': errorResponse('CLOUDINARY_URL is not set on the server')
+                    }
+                }
+            },
             '/api/v1/exercise/create-exercises': {
                 post: {
                     tags: ['Exercises'],
@@ -162,6 +234,45 @@ const createAppDocument = () =>
                         },
                         ...commonErrors,
                         '409': errorResponse('An exercise with that name already exists')
+                    }
+                }
+            },
+            '/api/v1/exercise/{exerciseId}/image': {
+                put: {
+                    tags: ['Exercises'],
+                    summary: "Upload or replace an exercise's image",
+                    description:
+                        'Multipart upload in the `image` field (PNG, JPEG or WebP, max 4 MB). The original is stored on Cloudinary unchanged and `exercise_icon` is set to its URL; add transformations such as `f_auto,q_auto,w_192,h_192,c_fill` after `/upload/` in that URL to get a resized AVIF/WebP.',
+                    security: sessionSecurity,
+                    requestParams: { path: exerciseIdParamsSchema },
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'multipart/form-data': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['image'],
+                                    properties: { image: { type: 'string', format: 'binary' } }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Image uploaded; the updated exercise',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        exerciseResponseSchema,
+                                        'ExerciseImageResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No exercise with that id'),
+                        '413': errorResponse('Image is larger than 4 MB'),
+                        '503': errorResponse('CLOUDINARY_URL is not set on the server')
                     }
                 }
             }
