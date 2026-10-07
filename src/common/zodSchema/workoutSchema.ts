@@ -11,9 +11,22 @@ import { z } from 'zod';
 
 /** How an exercise is performed inside one specific plan (the join-row values). */
 const workoutExerciseFields = {
-    repetition: z.int().positive(),
-    sets: z.int().positive()
+    repetition: z.int().positive().max(100),
+    sets: z.int().positive().max(20),
+    /** Working weight in kg; null or absent for bodyweight. */
+    weight: z.number().min(0).max(1000).nullable().optional()
 };
+
+/** Plans are one per weekday, Monday first. */
+export const WEEKDAYS = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+] as const;
 
 /** Picked from the dropdown — the exercise already exists in the catalog. */
 export const existingExerciseSchema = z
@@ -53,10 +66,10 @@ export const exerciseSchema = z
 /** The JSON body the client POSTs. */
 export const workoutBodySchema = z
     .strictObject({
-        day: z.string().trim().min(1),
+        day: z.enum(WEEKDAYS),
         /** ISO 8601 string — JSON has no Date. The service parses it before Prisma. */
         time: z.iso.datetime({ offset: true }),
-        muscle_group: z.string().trim().min(1),
+        muscle_group: z.string().trim().min(1).max(60),
         exercises: z.array(exerciseSchema).min(1)
     })
     .meta({ id: 'CreateWorkoutBody' });
@@ -105,3 +118,8 @@ export const createExerciseFormSchema = z
     .meta({ id: 'CreateExerciseForm' });
 
 export type CreateExerciseForm = z.infer<typeof createExerciseFormSchema>;
+
+/** Route params for `/api/v1/workout/:workoutId`. */
+export const workoutIdParamsSchema = z.strictObject({ workoutId: z.uuid() });
+
+export type WorkoutIdParams = z.infer<typeof workoutIdParamsSchema>;

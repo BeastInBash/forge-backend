@@ -110,6 +110,8 @@ model Workout_Exercise {
     exerciseId     String
     repetition     Int
     sets           Int
+    /// Working weight in kg; null for bodyweight exercises
+    weight         Float?
     order          Int
     workoutPlan    Workout_Plan @relation(fields: [workout_PlanId], references: [id], onDelete: Cascade)
     exercise       Exercise     @relation(fields: [exerciseId], references: [id])
