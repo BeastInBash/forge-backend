@@ -82,3 +82,34 @@ export const meResponseSchema = z
     })
     .nullable()
     .meta({ id: 'MeResponse', description: 'The current session, or null when signed out' });
+
+export const profileResponseSchema = z
+    .object({
+        id: z.string(),
+        name: z.string(),
+        email: z.email(),
+        bio: z.string().nullable(),
+        emailVerified: z.boolean(),
+        image: z.string().nullable(),
+        createdAt: z.iso.datetime(),
+        updatedAt: z.iso.datetime(),
+        accounts: z
+            .array(z.object({ providerId: z.string(), createdAt: z.iso.datetime() }))
+            .meta({ description: 'Linked sign-in methods ("credential" is email and password)' }),
+        sessions: z
+            .array(
+                z.object({
+                    createdAt: z.iso.datetime(),
+                    updatedAt: z.iso.datetime(),
+                    expiresAt: z.iso.datetime(),
+                    ipAddress: z.string().nullable(),
+                    userAgent: z.string().nullable(),
+                    current: z
+                        .boolean()
+                        .meta({ description: 'True for the session making this request' })
+                })
+            )
+            .meta({ description: 'Unexpired sessions, most recently active first' }),
+        stats: z.object({ workoutPlans: z.int(), exercisesCreated: z.int() })
+    })
+    .meta({ id: 'Profile' });
