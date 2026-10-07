@@ -113,3 +113,15 @@ export const profileResponseSchema = z
         stats: z.object({ workoutPlans: z.int(), exercisesCreated: z.int() })
     })
     .meta({ id: 'Profile' });
+
+export const exerciseSummarySchema = z
+    .object({
+        id: z.uuid(),
+        exercise_name: z.string(),
+        exercise_icon: z.string().nullable().meta({
+            description:
+                'Cloudinary URL of the original image; add e.g. `f_auto,q_auto,w_192,h_192,c_fill` after `/upload/` for a thumbnail'
+        }),
+        exercise_video: z.string().nullable()
+    })
+    .meta({ id: 'ExerciseSummary' });

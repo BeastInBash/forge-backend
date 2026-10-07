@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
 import ApiError from '../libs/ApiError';
 import { Prisma } from '../../generated/prisma/client';
 import { env } from '../../lib/env';
@@ -27,6 +28,12 @@ const toApiError = (err: unknown): ApiError | undefined => {
         );
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError) return fromPrismaError(err);
+    // Multipart upload limits from upload.middleware
+    if (err instanceof MulterError) {
+        return err.code === 'LIMIT_FILE_SIZE'
+            ? new ApiError(413, 'Image is too large (max 4 MB)')
+            : ApiError.badRequest(err.message);
+    }
     // Malformed JSON bodies from express.json()
     if (err instanceof SyntaxError && 'status' in err && err.status === 400) {
         return ApiError.badRequest('Malformed JSON body');

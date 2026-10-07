@@ -51,6 +51,13 @@
       }
     },
     {
+      "files": ["src/scripts/**"],
+      "rules": {
+        "no-console": "off",
+        "no-await-in-loop": "off"
+      }
+    },
+    {
       "files": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "no-console": "off",

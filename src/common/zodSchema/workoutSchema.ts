@@ -91,3 +91,17 @@ export const catalogExerciseSchema = z
 export const createExercisesBodySchema = z.array(catalogExerciseSchema).min(1);
 
 export type CatalogExerciseInput = z.infer<typeof catalogExerciseSchema>;
+
+/** Route params for `/api/v1/exercise/:exerciseId/...`. */
+export const exerciseIdParamsSchema = z.strictObject({ exerciseId: z.uuid() });
+
+export type ExerciseIdParams = z.infer<typeof exerciseIdParamsSchema>;
+
+/** Text fields of the multipart create-exercise form; the image arrives as `req.file`. */
+export const createExerciseFormSchema = z
+    .strictObject({
+        exercise_name: z.string().trim().min(1).max(100)
+    })
+    .meta({ id: 'CreateExerciseForm' });
+
+export type CreateExerciseForm = z.infer<typeof createExerciseFormSchema>;
