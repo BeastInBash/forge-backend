@@ -15,7 +15,9 @@ export const createApplication = () => {
         cors({
             origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
             methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-            credentials: true // Allow credentials (cookies, authorization headers, etc.)
+            credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+            // Lets browser clients read ETag for conditional requests (If-None-Match -> 304)
+            exposedHeaders: ['ETag']
         })
     );
     // Better Auth must be mounted before express.json()

@@ -7,6 +7,7 @@ import {
 } from '../services/exercises.services';
 import ApiError from '../../common/libs/ApiError';
 import ApiResponses from '../../common/libs/ApiResponses';
+import { sendConditionalJson } from '../../common/utils/conditionalJson';
 import type {
     CatalogExerciseInput,
     CreateExerciseForm,
@@ -28,9 +29,10 @@ export const setExerciseImage = async (req: Request, res: Response) => {
     return ApiResponses.ok(res, 'Exercise image updated', data);
 };
 
-export const listExercises = async (_req: Request, res: Response) => {
+export const listExercises = async (req: Request, res: Response) => {
     const data = await listExercisesService();
-    return ApiResponses.ok(res, 'Exercises', data);
+    // Clients cache the catalog and revalidate with If-None-Match; an unchanged catalog is a 304.
+    return sendConditionalJson(req, res, { success: true, message: 'Exercises', data });
 };
 
 export const createExerciseWithImage = async (req: Request, res: Response) => {
