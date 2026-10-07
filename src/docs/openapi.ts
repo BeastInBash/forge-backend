@@ -7,6 +7,7 @@ import {
     errorResponseSchema,
     exerciseResponseSchema,
     meResponseSchema,
+    profileResponseSchema,
     successResponse,
     workoutPlanResponseSchema
 } from './schemas';
@@ -44,6 +45,7 @@ const createAppDocument = () =>
         servers: [{ url: '/', description: 'This server' }],
         tags: [
             { name: 'System', description: 'Health and session helpers' },
+            { name: 'Profile', description: 'The signed-in user' },
             { name: 'Workouts', description: 'Workout plans' },
             { name: 'Exercises', description: 'Exercise catalog' }
         ],
@@ -81,6 +83,31 @@ const createAppDocument = () =>
                             description: 'Session or null',
                             content: { 'application/json': { schema: meResponseSchema } }
                         }
+                    }
+                }
+            },
+            '/api/v1/profile': {
+                get: {
+                    tags: ['Profile'],
+                    summary: 'Signed-in user profile',
+                    description:
+                        'The user record with linked sign-in methods, active sessions and activity counts. Tokens and password hashes are never included.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'Profile',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        profileResponseSchema,
+                                        'ProfileResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '404': errorResponse('The session belongs to a deleted user'),
+                        '500': errorResponse('Unexpected server error')
                     }
                 }
             },

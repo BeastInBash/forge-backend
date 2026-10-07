@@ -7,6 +7,7 @@ describe('OpenAPI document', () => {
         const paths = Object.keys(doc.paths ?? {});
         expect(paths).toContain('/api/v1/workout/create-workout');
         expect(paths).toContain('/api/v1/exercise/create-exercises');
+        expect(paths).toContain('/api/v1/profile');
         expect(paths).toContain('/api/auth/sign-in/email');
     });
 
