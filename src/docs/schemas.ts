@@ -129,3 +129,53 @@ export const exerciseSummarySchema = z
         exercise_video: z.string().nullable()
     })
     .meta({ id: 'ExerciseSummary' });
+
+const liftExerciseSchema = z
+    .object({ id: z.uuid(), exercise_name: z.string(), exercise_icon: z.string().nullable() })
+    .meta({ id: 'LiftExercise' });
+
+export const liftResponseSchema = z
+    .object({
+        id: z.uuid(),
+        userId: z.string(),
+        exerciseId: z.uuid(),
+        performedAt: z.iso.datetime(),
+        note: z.string().nullable(),
+        createdAt: z.iso.datetime(),
+        sets: z.array(
+            z.object({
+                id: z.uuid(),
+                weight: z
+                    .number()
+                    .nullable()
+                    .meta({ description: 'Load in kg; null for bodyweight' }),
+                reps: z.int(),
+                order: z.int()
+            })
+        )
+    })
+    .meta({ id: 'Lift' });
+
+export const liftSummarySchema = z
+    .object({
+        exercise: liftExerciseSchema,
+        sessions: z.int(),
+        last: liftResponseSchema,
+        best: z
+            .object({
+                weight: z.number().nullable(),
+                reps: z.int(),
+                performedAt: z.iso.datetime()
+            })
+            .nullable()
+            .meta({ description: 'The all-time best set by estimated one-rep max' }),
+        trend: z.array(z.number()).meta({
+            description:
+                'Best estimated one-rep max (or reps, for bodyweight) of each of the last 12 sessions, oldest first'
+        })
+    })
+    .meta({ id: 'LiftSummary' });
+
+export const liftHistorySchema = z
+    .object({ exercise: liftExerciseSchema, lifts: z.array(liftResponseSchema) })
+    .meta({ id: 'LiftHistory' });

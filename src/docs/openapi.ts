@@ -9,9 +9,17 @@ import {
     workoutIdParamsSchema
 } from '../common/zodSchema/workoutSchema';
 import {
+    liftBodySchema,
+    liftExerciseParamsSchema,
+    liftIdParamsSchema
+} from '../common/zodSchema/liftSchema';
+import {
     errorResponseSchema,
     exerciseResponseSchema,
     exerciseSummarySchema,
+    liftHistorySchema,
+    liftResponseSchema,
+    liftSummarySchema,
     meResponseSchema,
     profileResponseSchema,
     successResponse,
@@ -53,7 +61,8 @@ const createAppDocument = () =>
             { name: 'System', description: 'Health and session helpers' },
             { name: 'Profile', description: 'The signed-in user' },
             { name: 'Workouts', description: 'Workout plans' },
-            { name: 'Exercises', description: 'Exercise catalog' }
+            { name: 'Exercises', description: 'Exercise catalog' },
+            { name: 'Lifts', description: 'Logged sets and progress per exercise' }
         ],
         components: {
             securitySchemes: {
@@ -213,6 +222,95 @@ const createAppDocument = () =>
                         },
                         ...commonErrors,
                         '409': errorResponse('You already have a plan for that day')
+                    }
+                }
+            },
+            '/api/v1/lifts': {
+                get: {
+                    tags: ['Lifts'],
+                    summary: 'Progress per exercise',
+                    description:
+                        'One summary per exercise the user has logged, most recently trained first.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'The summaries',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        z.array(liftSummarySchema),
+                                        'ListLiftSummariesResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '500': errorResponse('Unexpected server error')
+                    }
+                },
+                post: {
+                    tags: ['Lifts'],
+                    summary: 'Log a lift',
+                    description: 'The sets performed for one exercise in one session, in order.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: liftBodySchema } }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Lift logged',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(liftResponseSchema, 'LogLiftResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                }
+            },
+            '/api/v1/lifts/exercise/{exerciseId}': {
+                get: {
+                    tags: ['Lifts'],
+                    summary: "An exercise's lift history",
+                    description: 'Every logged session of the exercise, oldest first.',
+                    security: sessionSecurity,
+                    requestParams: { path: liftExerciseParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'The history',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        liftHistorySchema,
+                                        'LiftHistoryResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No exercise with that id')
+                    }
+                }
+            },
+            '/api/v1/lifts/{liftId}': {
+                delete: {
+                    tags: ['Lifts'],
+                    summary: 'Delete a logged lift',
+                    security: sessionSecurity,
+                    requestParams: { path: liftIdParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'Lift deleted',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'DeleteLiftResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No lift with that id belongs to this user')
                     }
                 }
             },
