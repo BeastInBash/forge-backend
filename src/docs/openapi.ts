@@ -175,6 +175,7 @@ const createAppDocument = () =>
                         },
                         ...commonErrors,
                         '404': errorResponse('No plan with that id belongs to this user'),
+                        '403': errorResponse('A new exercise name was sent by a non-admin'),
                         '409': errorResponse('Another plan already uses that day')
                     }
                 },
@@ -202,7 +203,7 @@ const createAppDocument = () =>
                     tags: ['Workouts'],
                     summary: 'Create a workout plan',
                     description:
-                        'Each exercise is either a catalog pick (`exerciseId`) or a new one (`exercise_name`); new names are added to the catalog, or matched to an existing entry case-insensitively. The same exercise may appear only once per plan.',
+                        'Each exercise is either a catalog pick (`exerciseId`) or, for admins only, a new one (`exercise_name`); new names are added to the catalog, or matched to an existing entry case-insensitively. The same exercise may appear only once per plan.',
                     security: sessionSecurity,
                     requestBody: {
                         required: true,
@@ -221,6 +222,7 @@ const createAppDocument = () =>
                             }
                         },
                         ...commonErrors,
+                        '403': errorResponse('A new exercise name was sent by a non-admin'),
                         '409': errorResponse('You already have a plan for that day')
                     }
                 }
@@ -374,6 +376,7 @@ const createAppDocument = () =>
                             }
                         },
                         ...commonErrors,
+                        '403': errorResponse('Only admins can change the catalog'),
                         '409': errorResponse('An exercise with that name already exists'),
                         '413': errorResponse('Image is larger than 4 MB'),
                         '502': errorResponse('Cloudinary rejected the upload'),
@@ -404,6 +407,7 @@ const createAppDocument = () =>
                             }
                         },
                         ...commonErrors,
+                        '403': errorResponse('Only admins can change the catalog'),
                         '409': errorResponse('An exercise with that name already exists')
                     }
                 }
@@ -441,6 +445,7 @@ const createAppDocument = () =>
                             }
                         },
                         ...commonErrors,
+                        '403': errorResponse('Only admins can change the catalog'),
                         '404': errorResponse('No exercise with that id'),
                         '413': errorResponse('Image is larger than 4 MB'),
                         '503': errorResponse('CLOUDINARY_URL is not set on the server')

@@ -13,6 +13,8 @@ const envSchema = z.object({
     BETTER_AUTH_URL: z.string(),
     // Comma-separated list of allowed frontend origins
     CORS_ORIGIN: z.string().default('http://localhost:3000'),
+    // Comma-separated emails of users who may add exercises to the catalog
+    ADMIN_EMAILS: z.string().default('mohammadsaif0847@gmail.com'),
     // Optional until Google sign-in is enabled in src/lib/auth.ts
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
