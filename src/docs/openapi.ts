@@ -13,6 +13,7 @@ import {
     liftExerciseParamsSchema,
     liftIdParamsSchema
 } from '../common/zodSchema/liftSchema';
+import { onboardingBodySchema } from '../common/zodSchema/profileSchema';
 import {
     errorResponseSchema,
     exerciseResponseSchema,
@@ -21,6 +22,7 @@ import {
     liftResponseSchema,
     liftSummarySchema,
     meResponseSchema,
+    onboardingResponseSchema,
     profileResponseSchema,
     successResponse,
     workoutPlanResponseSchema
@@ -123,6 +125,33 @@ const createAppDocument = () =>
                         '401': errorResponse('No valid session cookie'),
                         '404': errorResponse('The session belongs to a deleted user'),
                         '500': errorResponse('Unexpected server error')
+                    }
+                }
+            },
+            '/api/v1/profile/onboarding': {
+                put: {
+                    tags: ['Profile'],
+                    summary: 'Save onboarding answers',
+                    description:
+                        'Stores age, height, weight and goal, and marks onboarding done. Every answer is required in the body but may be null for a skipped step; null clears a previous answer.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: onboardingBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Onboarding saved',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        onboardingResponseSchema,
+                                        'OnboardingResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors
                     }
                 }
             },

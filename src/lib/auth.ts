@@ -29,6 +29,13 @@ export const auth = betterAuth({
         enabled: true
     },
     socialProviders: google,
+    user: {
+        additionalFields: {
+            // Sent with every session so the app can route a new user to onboarding without an
+            // extra request. Only PUT /api/v1/profile/onboarding sets it.
+            onboardedAt: { type: 'date', required: false, input: false }
+        }
+    },
     trustedOrigins: [
         // The Forge app's deep-link scheme (app.json "scheme"); the Expo plugin sends it as the origin.
         'forge://',

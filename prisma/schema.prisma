@@ -26,8 +26,23 @@ model User {
   accounts      Account[]
   exercises     Exercise[]
   lift_logs     Lift_Log[]
+  /// Onboarding answers; each one is optional because every step can be skipped
+  age           Int?
+  /// Height in cm
+  heightCm      Float?
+  /// Body weight in kg
+  weightKg      Float?
+  goal          Fitness_Goal?
+  /// Set when the user finishes or skips onboarding; null means it hasn't been shown yet
+  onboardedAt   DateTime?
 
   @@map("user")
+}
+
+enum Fitness_Goal {
+  WEIGHT_LOSS
+  WEIGHT_GAIN
+  MUSCLE_BUILDING
 }
 
 model Session {

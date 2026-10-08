@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { fitnessGoalSchema } from '../common/zodSchema/profileSchema';
 
 /**
  * Response shapes for the OpenAPI document only — nothing validates against
@@ -87,6 +88,19 @@ export const meResponseSchema = z
     .nullable()
     .meta({ id: 'MeResponse', description: 'The current session, or null when signed out' });
 
+export const onboardingResponseSchema = z
+    .object({
+        age: z.int().nullable(),
+        heightCm: z.number().nullable().meta({ description: 'Height in cm' }),
+        weightKg: z.number().nullable().meta({ description: 'Body weight in kg' }),
+        goal: fitnessGoalSchema.nullable(),
+        onboardedAt: z.iso
+            .datetime()
+            .nullable()
+            .meta({ description: 'When onboarding was finished or skipped; null if not yet' })
+    })
+    .meta({ id: 'Onboarding' });
+
 export const profileResponseSchema = z
     .object({
         id: z.string(),
@@ -97,6 +111,7 @@ export const profileResponseSchema = z
         image: z.string().nullable(),
         createdAt: z.iso.datetime(),
         updatedAt: z.iso.datetime(),
+        ...onboardingResponseSchema.shape,
         accounts: z
             .array(z.object({ providerId: z.string(), createdAt: z.iso.datetime() }))
             .meta({ description: 'Linked sign-in methods ("credential" is email and password)' }),
