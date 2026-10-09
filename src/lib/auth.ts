@@ -36,7 +36,40 @@ export const auth = betterAuth({
         // (a slow sign-in outlives it, or the flow finishes in another browser context), and
         // every such sign-in failed with `state_mismatch`. The database check still rejects
         // unknown, reused and expired states.
-        skipStateCookieCheck: true
+        skipStateCookieCheck: true,
+        accountLinking: {
+            // Sign-up never verifies email, so every email-and-password account is unverified and,
+            // by default, Google sign-in with the same address failed with `account_not_linked`.
+            // Google vouches for the address, so link it; the hook below makes that safe.
+            requireLocalEmailVerified: false
+        }
+    },
+    databaseHooks: {
+        account: {
+            create: {
+                /**
+                 * Runs when Google is linked to an existing user, before Better Auth marks the
+                 * email verified. If the email was never verified, whoever set the password never
+                 * proved they own the address — it may have been registered in advance by someone
+                 * else. Drop the password login and every open session, so the Google sign-in
+                 * that proves ownership is the only way in.
+                 */
+                after: async (account) => {
+                    if (account.providerId === 'credential') return;
+                    const user = await prisma.user.findUnique({
+                        where: { id: account.userId },
+                        select: { emailVerified: true }
+                    });
+                    if (!user || user.emailVerified) return;
+                    await prisma.$transaction([
+                        prisma.account.deleteMany({
+                            where: { userId: account.userId, providerId: 'credential' }
+                        }),
+                        prisma.session.deleteMany({ where: { userId: account.userId } })
+                    ]);
+                }
+            }
+        }
     },
     user: {
         additionalFields: {
