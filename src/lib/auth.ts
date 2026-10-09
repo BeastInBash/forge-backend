@@ -29,6 +29,15 @@ export const auth = betterAuth({
         enabled: true
     },
     socialProviders: google,
+    account: {
+        // The OAuth state is stored in the verification table (single use, 10-minute expiry) and
+        // also mirrored in a 5-minute browser cookie. The app's sign-in runs in a Custom Tab /
+        // auth session, where that cookie is often missing by the time Google redirects back
+        // (a slow sign-in outlives it, or the flow finishes in another browser context), and
+        // every such sign-in failed with `state_mismatch`. The database check still rejects
+        // unknown, reused and expired states.
+        skipStateCookieCheck: true
+    },
     user: {
         additionalFields: {
             // Sent with every session so the app can route a new user to onboarding without an
