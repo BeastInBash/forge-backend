@@ -9,18 +9,22 @@ export const mealTimeSchema = z.enum(['breakfast', 'lunch', 'dinner', 'snack']);
  *
  * @example { "mealTime": "lunch", "mealItem": { "Chicken": "250g cooked", "Rice": "300g cooked" } }
  */
+const mealItemsSchema = z
+    .record(
+        z.string().trim().min(1).max(60),
+        z.string().trim().min(1).max(100).meta({
+            description: 'Amount and preparation, e.g. "250g cooked" or "2 pieces"'
+        })
+    )
+    .refine((items) => Object.keys(items).length >= 1, 'Add at least one food')
+    .refine((items) => Object.keys(items).length <= 20, 'At most 20 foods per meal');
+
+export type MealItems = z.infer<typeof mealItemsSchema>;
+
 export const analyzeMealBodySchema = z
     .strictObject({
         mealTime: mealTimeSchema,
-        mealItem: z
-            .record(
-                z.string().trim().min(1).max(60),
-                z.string().trim().min(1).max(100).meta({
-                    description: 'Amount and preparation, e.g. "250g cooked" or "2 pieces"'
-                })
-            )
-            .refine((items) => Object.keys(items).length >= 1, 'Add at least one food')
-            .refine((items) => Object.keys(items).length <= 20, 'At most 20 foods per meal')
+        mealItem: mealItemsSchema
     })
     .meta({
         id: 'AnalyzeMealBody',
@@ -28,6 +32,47 @@ export const analyzeMealBodySchema = z
     });
 
 export type AnalyzeMealBody = z.infer<typeof analyzeMealBodySchema>;
+
+/** The JSON body for `POST /api/v1/meals`: a meal to analyse and save. */
+export const createMealBodySchema = z
+    .strictObject({
+        mealTime: mealTimeSchema,
+        mealItem: mealItemsSchema,
+        /** When it was eaten; defaults to now. ISO 8601 with offset. */
+        eatenAt: z.iso
+            .datetime({ offset: true })
+            .transform((value) => new Date(value))
+            // A little slack for clocks that run ahead of the server's
+            .refine((date) => date.getTime() <= Date.now() + 10 * 60_000, "Can't be in the future")
+            .optional()
+    })
+    .meta({
+        id: 'CreateMealBody',
+        example: {
+            mealTime: 'lunch',
+            mealItem: { Chicken: '250g cooked', Rice: '300g cooked' },
+            eatenAt: '2026-10-10T13:15:00+05:30'
+        }
+    });
+
+export type CreateMealBody = z.infer<typeof createMealBodySchema>;
+
+/** Query for `GET /api/v1/meals`. */
+export const listMealsQuerySchema = z.strictObject({
+    /** Only meals eaten before this time: the previous page's `nextBefore` */
+    before: z.iso
+        .datetime({ offset: true })
+        .transform((value) => new Date(value))
+        .optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(30)
+});
+
+export type ListMealsQuery = z.infer<typeof listMealsQuerySchema>;
+
+/** Route params for `/api/v1/meals/:mealId`. */
+export const mealIdParamsSchema = z.strictObject({ mealId: z.uuid() });
+
+export type MealIdParams = z.infer<typeof mealIdParamsSchema>;
 
 // ─── What the AI must return ────────────────────────────────────────────────────────────────
 

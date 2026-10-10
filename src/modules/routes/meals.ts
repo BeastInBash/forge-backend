@@ -1,9 +1,19 @@
 import { Router } from 'express';
 import { requireAuth } from '../../common/middleware/auth.middleware';
-import { validateBody } from '../../common/middleware/validate.middleware';
+import { validateBody, validateParams } from '../../common/middleware/validate.middleware';
 import { asyncHandler } from '../../common/utils/asyncHandler';
-import { analyzeMealBodySchema } from '../../common/zodSchema/mealSchema';
-import { analyzeMeal } from '../controllers/meal.controller';
+import {
+    analyzeMealBodySchema,
+    createMealBodySchema,
+    mealIdParamsSchema
+} from '../../common/zodSchema/mealSchema';
+import {
+    analyzeMeal,
+    createMeal,
+    deleteMeal,
+    getMeal,
+    listMeals
+} from '../controllers/meal.controller';
 
 const mealRouter = Router();
 
@@ -12,6 +22,19 @@ mealRouter.post(
     requireAuth,
     validateBody(analyzeMealBodySchema),
     asyncHandler(analyzeMeal)
+);
+
+mealRouter.get('/', requireAuth, asyncHandler(listMeals));
+
+mealRouter.post('/', requireAuth, validateBody(createMealBodySchema), asyncHandler(createMeal));
+
+mealRouter.get('/:mealId', requireAuth, validateParams(mealIdParamsSchema), asyncHandler(getMeal));
+
+mealRouter.delete(
+    '/:mealId',
+    requireAuth,
+    validateParams(mealIdParamsSchema),
+    asyncHandler(deleteMeal)
 );
 
 export default mealRouter;

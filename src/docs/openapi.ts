@@ -14,7 +14,12 @@ import {
     liftIdParamsSchema
 } from '../common/zodSchema/liftSchema';
 import { onboardingBodySchema } from '../common/zodSchema/profileSchema';
-import { analyzeMealBodySchema } from '../common/zodSchema/mealSchema';
+import {
+    analyzeMealBodySchema,
+    createMealBodySchema,
+    listMealsQuerySchema,
+    mealIdParamsSchema
+} from '../common/zodSchema/mealSchema';
 import {
     errorResponseSchema,
     exerciseResponseSchema,
@@ -22,7 +27,10 @@ import {
     liftHistorySchema,
     liftResponseSchema,
     liftSummarySchema,
+    createdMealSchema,
     mealAnalysisSchema,
+    mealDetailSchema,
+    mealListSchema,
     meResponseSchema,
     onboardingResponseSchema,
     profileResponseSchema,
@@ -345,6 +353,92 @@ const createAppDocument = () =>
                         },
                         ...commonErrors,
                         '404': errorResponse('No lift with that id belongs to this user')
+                    }
+                }
+            },
+            '/api/v1/meals': {
+                get: {
+                    tags: ['Meals'],
+                    summary: 'Meal history',
+                    description:
+                        "The user's meals, newest first, with calories and macros. Pass `nextBefore` from the response as `before` to load older meals.",
+                    security: sessionSecurity,
+                    requestParams: { query: listMealsQuerySchema },
+                    responses: {
+                        '200': {
+                            description: 'A page of meals',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(mealListSchema, 'ListMealsResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                },
+                post: {
+                    tags: ['Meals'],
+                    summary: 'Log a meal',
+                    description:
+                        'Analyses the meal like `/analyze` and saves it. Entries that are not food are returned in `unrecognized` and not saved.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: createMealBodySchema } }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Meal logged',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(createdMealSchema, 'CreateMealResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '422': errorResponse(
+                            'No food recognised, or the AI estimate failed sanity checks twice'
+                        ),
+                        '502': errorResponse('The AI provider failed or timed out'),
+                        '503': errorResponse('The AI provider key is not configured')
+                    }
+                }
+            },
+            '/api/v1/meals/{mealId}': {
+                get: {
+                    tags: ['Meals'],
+                    summary: 'A meal with its full analysis',
+                    security: sessionSecurity,
+                    requestParams: { path: mealIdParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'The meal',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(mealDetailSchema, 'GetMealResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No meal with that id belongs to this user')
+                    }
+                },
+                delete: {
+                    tags: ['Meals'],
+                    summary: 'Delete a meal',
+                    security: sessionSecurity,
+                    requestParams: { path: mealIdParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'Meal deleted',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'DeleteMealResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No meal with that id belongs to this user')
                     }
                 }
             },

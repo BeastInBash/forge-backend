@@ -215,30 +215,70 @@ export const nutritionReportSchema = z
     })
     .meta({ id: 'NutritionReport' });
 
-export const mealAnalysisSchema = z
+const mealItemSchema = z
     .object({
+        food: z.string().meta({ description: 'The name as sent' }),
+        amount: z.string().meta({ description: 'The amount as sent' }),
+        name: z.string().meta({ description: 'What the AI understood' }),
+        grams: z.int().meta({ description: 'Estimated edible weight' }),
+        state: z.enum(['raw', 'cooked']).nullable(),
+        assumption: z.string().nullable(),
+        confidence: z
+            .number()
+            .meta({ description: '0–1; below 0.5 the app should ask the user to check' }),
+        nutrition: nutritionReportSchema
+    })
+    .meta({ id: 'MealItem' });
+
+const unrecognizedSchema = z
+    .array(z.object({ food: z.string(), amount: z.string() }))
+    .meta({ description: 'Entries that are not food or drink, left out of the total' });
+
+const mealReportShape = {
+    items: z.array(mealItemSchema),
+    total: nutritionReportSchema,
+    units: z
+        .record(z.string(), z.string())
+        .meta({ description: 'Unit of each nutrient, e.g. calories → kcal' }),
+    disclaimer: z.string()
+};
+
+export const mealAnalysisSchema = z
+    .object({ mealTime: mealTimeSchema, ...mealReportShape, unrecognized: unrecognizedSchema })
+    .meta({ id: 'MealAnalysis' });
+
+export const mealDetailSchema = z
+    .object({
+        id: z.uuid(),
         mealTime: mealTimeSchema,
-        items: z.array(
+        eatenAt: z.iso.datetime(),
+        ...mealReportShape
+    })
+    .meta({ id: 'Meal' });
+
+export const createdMealSchema = mealDetailSchema
+    .extend({ unrecognized: unrecognizedSchema })
+    .meta({ id: 'CreatedMeal' });
+
+export const mealListSchema = z
+    .object({
+        meals: z.array(
             z.object({
-                food: z.string().meta({ description: 'The name as sent' }),
-                amount: z.string().meta({ description: 'The amount as sent' }),
-                name: z.string().meta({ description: 'What the AI understood' }),
-                grams: z.int().meta({ description: 'Estimated edible weight' }),
-                state: z.enum(['raw', 'cooked']).nullable(),
-                assumption: z.string().nullable(),
-                confidence: z
-                    .number()
-                    .meta({ description: '0–1; below 0.5 the app should ask the user to check' }),
-                nutrition: nutritionReportSchema
+                id: z.uuid(),
+                mealTime: mealTimeSchema,
+                eatenAt: z.iso.datetime(),
+                foods: z.array(z.string()).meta({ description: 'Food names, in order' }),
+                total: z.object({
+                    calories: z.number(),
+                    protein: z.number(),
+                    carbs: z.number(),
+                    fat: z.number()
+                })
             })
         ),
-        total: nutritionReportSchema,
-        units: z
-            .record(z.string(), z.string())
-            .meta({ description: 'Unit of each nutrient, e.g. calories → kcal' }),
-        unrecognized: z
-            .array(z.object({ food: z.string(), amount: z.string() }))
-            .meta({ description: 'Entries that are not food or drink, left out of the total' }),
-        disclaimer: z.string()
+        nextBefore: z.iso
+            .datetime()
+            .nullable()
+            .meta({ description: 'Pass as `before` for the next page; null on the last page' })
     })
-    .meta({ id: 'MealAnalysis' });
+    .meta({ id: 'MealList' });

@@ -26,6 +26,7 @@ model User {
   accounts      Account[]
   exercises     Exercise[]
   lift_logs     Lift_Log[]
+  meals         Meal[]
   /// Onboarding answers; each one is optional because every step can be skipped
   age           Int?
   /// Height in cm
@@ -165,6 +166,48 @@ model Lift_Set {
 
   @@index([liftLogId])
   @@map("lift_set")
+}
+
+/// One logged meal. Its nutrition is never stored: it is calculated from the items on read.
+model Meal {
+  id            String      @id @default(uuid())
+  userId        String
+  /// "breakfast" | "lunch" | "dinner" | "snack", validated by Zod
+  mealTime      String
+  eatenAt       DateTime
+  /// Provider and model that estimated the items, e.g. "gemini/gemini-3.5-flash-lite"
+  aiModel       String
+  /// PROMPT_VERSION in meal.services.ts when the meal was analysed
+  promptVersion Int
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         Meal_Item[]
+
+  @@index([userId, eatenAt])
+  @@map("meal")
+}
+
+/// One food in a meal: what the user typed and the AI's estimate for it.
+model Meal_Item {
+  id         String  @id @default(uuid())
+  mealId     String
+  /// The name and amount as the user typed them
+  food       String
+  amount     String
+  /// What the AI understood, e.g. "Chicken breast"
+  name       String
+  grams      Float
+  /// "raw" | "cooked" | null
+  state      String?
+  assumption String?
+  confidence Float
+  /// Estimated nutrients per 100 g, keyed like NUTRIENTS in src/common/utils/nutrition.ts
+  per100g    Json
+  order      Int
+  meal       Meal    @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("meal_item")
 }
 
 model Food_Items {
