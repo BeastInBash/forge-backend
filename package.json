@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "1.6.27",
+    "@google/genai": "^2.28.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@scalar/express-api-reference": "^0.10.26",

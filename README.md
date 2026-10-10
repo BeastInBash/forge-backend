@@ -46,6 +46,10 @@ Check it is up with `GET /health`.
 | `GOOGLE_CLIENT_ID`     | no       | Google sign-in is enabled only when both Google variables are set                                 |
 | `GOOGLE_CLIENT_SECRET` | no       |                                                                                                   |
 | `CLOUDINARY_URL`       | no       | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. Needed for image uploads and the seed         |
+| `AI_PROVIDER`          | no       | `gemini` (default) or `openai`: which provider `src/lib/ai.ts` calls                              |
+| `AI_MODEL`             | no       | Pinned model ID; defaults to `gemini-3.5-flash-lite` for Gemini, required for OpenAI              |
+| `GEMINI_API_KEY`       | no       | Needed for `POST /api/v1/meals/analyze` when the provider is Gemini (503 without it)              |
+| `OPENAI_API_KEY`       | no       | Needed when `AI_PROVIDER=openai`                                                                  |
 
 For Google sign-in, create a "Web application" OAuth client in Google Cloud Console and add
 `<BETTER_AUTH_URL>/api/auth/callback/google` as an authorised redirect URI. When testing on a real

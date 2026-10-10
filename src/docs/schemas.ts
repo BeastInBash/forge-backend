@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { fitnessGoalSchema } from '../common/zodSchema/profileSchema';
+import { mealTimeSchema } from '../common/zodSchema/mealSchema';
+import { NUTRIENTS, type NutrientGroup } from '../common/utils/nutrition';
 
 /**
  * Response shapes for the OpenAPI document only — nothing validates against
@@ -194,3 +196,49 @@ export const liftSummarySchema = z
 export const liftHistorySchema = z
     .object({ exercise: liftExerciseSchema, lifts: z.array(liftResponseSchema) })
     .meta({ id: 'LiftHistory' });
+
+const nutrientGroup = (group: NutrientGroup) =>
+    z.object(
+        Object.fromEntries(
+            Object.entries(NUTRIENTS)
+                .filter(([, nutrient]) => nutrient.group === group)
+                .map(([key, { unit }]) => [key, z.number().meta({ description: unit })])
+        )
+    );
+
+export const nutritionReportSchema = z
+    .object({
+        energy: nutrientGroup('energy'),
+        macros: nutrientGroup('macros'),
+        vitamins: nutrientGroup('vitamins'),
+        minerals: nutrientGroup('minerals')
+    })
+    .meta({ id: 'NutritionReport' });
+
+export const mealAnalysisSchema = z
+    .object({
+        mealTime: mealTimeSchema,
+        items: z.array(
+            z.object({
+                food: z.string().meta({ description: 'The name as sent' }),
+                amount: z.string().meta({ description: 'The amount as sent' }),
+                name: z.string().meta({ description: 'What the AI understood' }),
+                grams: z.int().meta({ description: 'Estimated edible weight' }),
+                state: z.enum(['raw', 'cooked']).nullable(),
+                assumption: z.string().nullable(),
+                confidence: z
+                    .number()
+                    .meta({ description: '0–1; below 0.5 the app should ask the user to check' }),
+                nutrition: nutritionReportSchema
+            })
+        ),
+        total: nutritionReportSchema,
+        units: z
+            .record(z.string(), z.string())
+            .meta({ description: 'Unit of each nutrient, e.g. calories → kcal' }),
+        unrecognized: z
+            .array(z.object({ food: z.string(), amount: z.string() }))
+            .meta({ description: 'Entries that are not food or drink, left out of the total' }),
+        disclaimer: z.string()
+    })
+    .meta({ id: 'MealAnalysis' });

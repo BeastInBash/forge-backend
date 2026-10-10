@@ -7,6 +7,7 @@ import workoutRouter from '../modules/routes/workouts';
 import exerciseRoute from '../modules/routes/exercise';
 import profileRouter from '../modules/routes/profile';
 import liftRouter from '../modules/routes/lifts';
+import mealRouter from '../modules/routes/meals';
 import docsRouter from '../docs/docs.routes';
 import { asyncHandler } from '../common/utils/asyncHandler';
 import { errorHandler, notFoundHandler } from '../common/middleware/error.middleware';
@@ -40,6 +41,7 @@ export const createApplication = () => {
     app.use('/api/v1/exercise', exerciseRoute);
     app.use('/api/v1/profile', profileRouter);
     app.use('/api/v1/lifts', liftRouter);
+    app.use('/api/v1/meals', mealRouter);
     // Scalar UI at /docs and the spec at /openapi.json — not exposed in production
     if (env.NODE_ENV !== 'production') {
         app.use(docsRouter);

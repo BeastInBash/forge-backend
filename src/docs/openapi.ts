@@ -14,6 +14,7 @@ import {
     liftIdParamsSchema
 } from '../common/zodSchema/liftSchema';
 import { onboardingBodySchema } from '../common/zodSchema/profileSchema';
+import { analyzeMealBodySchema } from '../common/zodSchema/mealSchema';
 import {
     errorResponseSchema,
     exerciseResponseSchema,
@@ -21,6 +22,7 @@ import {
     liftHistorySchema,
     liftResponseSchema,
     liftSummarySchema,
+    mealAnalysisSchema,
     meResponseSchema,
     onboardingResponseSchema,
     profileResponseSchema,
@@ -64,7 +66,8 @@ const createAppDocument = () =>
             { name: 'Profile', description: 'The signed-in user' },
             { name: 'Workouts', description: 'Workout plans' },
             { name: 'Exercises', description: 'Exercise catalog' },
-            { name: 'Lifts', description: 'Logged sets and progress per exercise' }
+            { name: 'Lifts', description: 'Logged sets and progress per exercise' },
+            { name: 'Meals', description: 'AI nutrition estimates for meals' }
         ],
         components: {
             securitySchemes: {
@@ -342,6 +345,38 @@ const createAppDocument = () =>
                         },
                         ...commonErrors,
                         '404': errorResponse('No lift with that id belongs to this user')
+                    }
+                }
+            },
+            '/api/v1/meals/analyze': {
+                post: {
+                    tags: ['Meals'],
+                    summary: "Estimate a meal's nutrition",
+                    description:
+                        'Sends each food and amount to the configured AI provider and returns calories, macros, vitamins and minerals per food and for the whole meal. Item values are AI estimates per 100 g scaled to the estimated weight; totals are calculated by the server. Nothing is saved.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: analyzeMealBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Meal analysed',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        mealAnalysisSchema,
+                                        'AnalyzeMealResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '422': errorResponse(
+                            'No food recognised, or the AI estimate failed sanity checks twice'
+                        ),
+                        '502': errorResponse('The AI provider failed or timed out'),
+                        '503': errorResponse('The AI provider key is not configured')
                     }
                 }
             },

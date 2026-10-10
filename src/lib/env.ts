@@ -25,7 +25,15 @@ const envSchema = z.object({
             /^cloudinary:\/\/[^:]+:[^@]+@.+$/,
             'Expected cloudinary://<api_key>:<api_secret>@<cloud_name>'
         )
-        .optional()
+        .optional(),
+    // Which AI provider src/lib/ai.ts calls; each one needs its own key below
+    AI_PROVIDER: z.enum(['gemini', 'openai']).default('gemini'),
+    // Pinned model ID; empty uses the provider's default in src/lib/ai.ts. Changing it changes
+    // the numbers users see, so change it deliberately.
+    AI_MODEL: z.string().optional(),
+    // Optional so the server boots without them; AI routes return 503 until the active one is set
+    GEMINI_API_KEY: z.string().optional(),
+    OPENAI_API_KEY: z.string().optional()
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

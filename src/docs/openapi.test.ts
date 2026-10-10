@@ -12,6 +12,7 @@ describe('OpenAPI document', () => {
         expect(paths).toContain('/api/v1/exercise');
         expect(paths).toContain('/api/v1/workout/{workoutId}');
         expect(paths).toContain('/api/v1/exercise/{exerciseId}/image');
+        expect(paths).toContain('/api/v1/meals/analyze');
         expect(paths).toContain('/api/auth/sign-in/email');
     });
 
