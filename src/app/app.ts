@@ -9,6 +9,7 @@ import profileRouter from '../modules/routes/profile';
 import liftRouter from '../modules/routes/lifts';
 import mealRouter from '../modules/routes/meals';
 import docsRouter from '../docs/docs.routes';
+import { deleteAccountPage, privacyPolicyPage } from '../legal/pages';
 import { asyncHandler } from '../common/utils/asyncHandler';
 import { errorHandler, notFoundHandler } from '../common/middleware/error.middleware';
 export const createApplication = () => {
@@ -42,6 +43,13 @@ export const createApplication = () => {
     app.use('/api/v1/profile', profileRouter);
     app.use('/api/v1/lifts', liftRouter);
     app.use('/api/v1/meals', mealRouter);
+    // Public pages linked from Google Play and the app
+    app.get('/privacy', (_req, res) => {
+        res.type('html').send(privacyPolicyPage);
+    });
+    app.get('/delete-account', (_req, res) => {
+        res.type('html').send(deleteAccountPage);
+    });
     // Scalar UI at /docs and the spec at /openapi.json — not exposed in production
     if (env.NODE_ENV !== 'production') {
         app.use(docsRouter);

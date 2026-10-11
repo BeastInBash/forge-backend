@@ -75,3 +75,12 @@ export const saveOnboardingService = async (userId: string, answers: OnboardingB
         select: onboardingSelect
     });
 };
+
+/**
+ * Permanently deletes the user. The database cascades to their sessions, sign-in methods,
+ * workout plans, lift logs and meals; exercises they added to the shared catalog stay, with
+ * `createdById` cleared. A user that no longer exists surfaces as Prisma's P2025 (404).
+ */
+export const deleteAccountService = async (userId: string) => {
+    await prisma.user.delete({ where: { id: userId } });
+};

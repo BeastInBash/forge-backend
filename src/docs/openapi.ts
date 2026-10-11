@@ -137,6 +137,26 @@ const createAppDocument = () =>
                         '404': errorResponse('The session belongs to a deleted user'),
                         '500': errorResponse('Unexpected server error')
                     }
+                },
+                delete: {
+                    tags: ['Profile'],
+                    summary: 'Delete the account',
+                    description:
+                        "Permanently deletes the signed-in user with their sessions, sign-in methods, workout plans, lift logs and meals. Exercises they added to the catalog stay, without a creator. Can't be undone.",
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'Account deleted',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'DeleteAccountResponse')
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '404': errorResponse('The session belongs to a deleted user'),
+                        '500': errorResponse('Unexpected server error')
+                    }
                 }
             },
             '/api/v1/profile/onboarding': {

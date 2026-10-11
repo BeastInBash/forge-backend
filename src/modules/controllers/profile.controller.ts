@@ -1,5 +1,9 @@
 import type { Request, Response } from 'express';
-import { getProfileService, saveOnboardingService } from '../services/profile.services';
+import {
+    deleteAccountService,
+    getProfileService,
+    saveOnboardingService
+} from '../services/profile.services';
 import ApiResponses from '../../common/libs/ApiResponses';
 import type { OnboardingBodyInput } from '../../common/zodSchema/profileSchema';
 
@@ -16,4 +20,9 @@ export const saveOnboarding = async (req: Request, res: Response) => {
         req.body as OnboardingBodyInput
     );
     return ApiResponses.ok(res, 'Onboarding saved', data);
+};
+
+export const deleteAccount = async (_req: Request, res: Response) => {
+    await deleteAccountService(res.locals.session.session.userId);
+    return ApiResponses.ok(res, 'Account deleted', null);
 };
