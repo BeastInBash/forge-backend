@@ -50,6 +50,8 @@ Check it is up with `GET /health`.
 | `AI_MODEL`             | no       | Pinned model ID; defaults to `gemini-3.5-flash-lite` for Gemini, required for OpenAI              |
 | `GEMINI_API_KEY`       | no       | Needed for `POST /api/v1/meals/analyze` when the provider is Gemini (503 without it)              |
 | `OPENAI_API_KEY`       | no       | Needed when `AI_PROVIDER=openai`                                                                  |
+| `RESEND_API_KEY`       | no       | Sends password-reset codes. Without it no email goes out (the failure is logged)                  |
+| `EMAIL_FROM`           | no       | Sender, e.g. `Forge <no-reply@your-domain>` on a Resend-verified domain                           |
 
 For Google sign-in, create a "Web application" OAuth client in Google Cloud Console and add
 `<BETTER_AUTH_URL>/api/auth/callback/google` as an authorised redirect URI. When testing on a real
@@ -94,20 +96,20 @@ The image folder is git-ignored.
 All `/api/v1` routes require a signed-in session (cookie, or the `Cookie` header sent by the Expo
 app).
 
-| Method   | Path                                 | Description                                                              |
-| -------- | ------------------------------------ | ------------------------------------------------------------------------ |
-| `*`      | `/api/auth/*`                        | Better Auth: sign-up, sign-in, sign-out, Google OAuth, session           |
-| `GET`    | `/api/me`                            | Current session, or `null`                                               |
-| `GET`    | `/api/v1/profile`                    | The signed-in user's profile                                             |
-| `GET`    | `/api/v1/exercise`                   | Exercise catalog. Sends an `ETag` and answers `If-None-Match` with `304` |
-| `POST`   | `/api/v1/exercise`                   | Create one exercise with an image (multipart: `exercise_name`, `image`)  |
-| `POST`   | `/api/v1/exercise/create-exercises`  | Create several exercises from JSON                                       |
-| `PUT`    | `/api/v1/exercise/:exerciseId/image` | Replace an exercise's image (multipart: `image`)                         |
-| `GET`    | `/api/v1/workout`                    | The user's workout plans                                                 |
-| `POST`   | `/api/v1/workout/create-workout`     | Create a plan with its exercises (sets, reps, weight)                    |
-| `PUT`    | `/api/v1/workout/:workoutId`         | Replace a plan                                                           |
-| `DELETE` | `/api/v1/workout/:workoutId`         | Delete a plan                                                            |
-| `GET`    | `/health`                            | Liveness check                                                           |
+| Method   | Path                                 | Description                                                                    |
+| -------- | ------------------------------------ | ------------------------------------------------------------------------------ |
+| `*`      | `/api/auth/*`                        | Better Auth: sign-up, sign-in, sign-out, Google OAuth, session, password reset |
+| `GET`    | `/api/me`                            | Current session, or `null`                                                     |
+| `GET`    | `/api/v1/profile`                    | The signed-in user's profile                                                   |
+| `GET`    | `/api/v1/exercise`                   | Exercise catalog. Sends an `ETag` and answers `If-None-Match` with `304`       |
+| `POST`   | `/api/v1/exercise`                   | Create one exercise with an image (multipart: `exercise_name`, `image`)        |
+| `POST`   | `/api/v1/exercise/create-exercises`  | Create several exercises from JSON                                             |
+| `PUT`    | `/api/v1/exercise/:exerciseId/image` | Replace an exercise's image (multipart: `image`)                               |
+| `GET`    | `/api/v1/workout`                    | The user's workout plans                                                       |
+| `POST`   | `/api/v1/workout/create-workout`     | Create a plan with its exercises (sets, reps, weight)                          |
+| `PUT`    | `/api/v1/workout/:workoutId`         | Replace a plan                                                                 |
+| `DELETE` | `/api/v1/workout/:workoutId`         | Delete a plan                                                                  |
+| `GET`    | `/health`                            | Liveness check                                                                 |
 
 Outside production the full reference, including Better Auth's endpoints, is served by Scalar at
 `/docs`, and the raw OpenAPI spec at `/openapi.json`. Request bodies come from the Zod schemas in

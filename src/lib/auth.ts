@@ -1,15 +1,40 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
-import { openAPI } from 'better-auth/plugins';
+import { emailOTP, openAPI } from 'better-auth/plugins';
 import { expo } from '@better-auth/expo';
 
+import { noPasswordEmail, passwordResetCodeEmail } from '../common/utils/authEmails';
 import prisma from './db';
+import { sendEmail } from './email';
 import { env } from './env';
 
 const isDev = env.NODE_ENV !== 'production';
 
 // Google is switched on once both keys are set in .env, so the app's Google button
 // returns a clear "provider not found" error until then instead of crashing the server.
+/** How long a password-reset code stays valid. */
+const RESET_CODE_TTL_SECONDS = 10 * 60;
+
+/**
+ * Sends the password-reset code (`POST /api/auth/email-otp/request-password-reset`). Better Auth
+ * only calls this for emails that have an account, answers `success` either way, and logs (rather
+ * than returns) a failed send, so the response never reveals whether an email is registered.
+ * Accounts without a password (Google only) get a note to use Google instead of a code: without
+ * it the reset would quietly add a password to a Google account.
+ */
+async function sendPasswordResetCode(email: string, otp: string) {
+    const passwordAccount = await prisma.account.findFirst({
+        where: { providerId: 'credential', user: { email } },
+        select: { id: true }
+    });
+    await sendEmail(
+        email,
+        passwordAccount
+            ? passwordResetCodeEmail(otp, RESET_CODE_TTL_SECONDS / 60)
+            : noPasswordEmail()
+    );
+}
+
 const google =
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? {
@@ -26,8 +51,21 @@ export const auth = betterAuth({
         provider: 'postgresql'
     }),
     emailAndPassword: {
-        enabled: true
+        enabled: true,
+        // A reset signs out every device, in case the old password was the reason for it.
+        revokeSessionsOnPasswordReset: true
     },
+    // The email OTP plugin is used only for password resets. Its other flows (sign-in and sign-up
+    // by code, email verification, email change) aren't part of the app, so they are switched off.
+    disabledPaths: [
+        '/email-otp/send-verification-otp',
+        '/email-otp/check-verification-otp',
+        '/email-otp/verify-email',
+        '/sign-in/email-otp',
+        '/forget-password/email-otp',
+        '/email-otp/request-email-change',
+        '/email-otp/change-email'
+    ],
     socialProviders: google,
     account: {
         // The OAuth state is stored in the verification table (single use, 10-minute expiry) and
@@ -90,6 +128,19 @@ export const auth = betterAuth({
         // Lets the native app authenticate: maps its `expo-origin` header to `origin` and
         // hands the session back to the app after social sign-in.
         expo(),
+        // Forgot password: the app requests a code by email, then sends it back with the new
+        // password to /email-otp/reset-password. Codes are stored hashed and die after a few wrong
+        // guesses; the plugin limits sending to 3 requests a minute (in production).
+        emailOTP({
+            otpLength: 6,
+            expiresIn: RESET_CODE_TTL_SECONDS,
+            allowedAttempts: 5,
+            storeOTP: 'hashed',
+            disableSignUp: true,
+            async sendVerificationOTP({ email, otp, type }) {
+                if (type === 'forget-password') await sendPasswordResetCode(email, otp);
+            }
+        }),
         // Exposes /api/auth/open-api/generate-schema, merged into /docs (src/docs).
         // Scalar is served by our own /docs route, so Better Auth's page is disabled.
         ...(isDev ? [openAPI({ disableDefaultReference: true })] : [])

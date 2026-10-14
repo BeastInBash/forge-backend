@@ -33,7 +33,12 @@ const envSchema = z.object({
     AI_MODEL: z.string().optional(),
     // Optional so the server boots without them; AI routes return 503 until the active one is set
     GEMINI_API_KEY: z.string().optional(),
-    OPENAI_API_KEY: z.string().optional()
+    OPENAI_API_KEY: z.string().optional(),
+    // Optional so the server boots without it; password-reset emails fail with 503 until it is set
+    RESEND_API_KEY: z.string().optional(),
+    // Sender for auth emails. Resend's shared address only delivers to the Resend account's own
+    // email, so production needs an address on a domain verified in Resend.
+    EMAIL_FROM: z.string().default('Forge <onboarding@resend.dev>')
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

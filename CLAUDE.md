@@ -1,106 +1,82 @@
+# forge-backend
 
-Default to using Bun instead of Node.js.
+Express 5 API for the [Forge](../Forge) app, run with Bun locally and on Node at Vercel
+(`src/index.ts`). PostgreSQL (Neon) through Prisma 7 with the `pg` adapter, Better Auth, Zod 4,
+Cloudinary for exercise images, and an LLM (Gemini by default) for meal nutrition. README.md has
+setup, env vars and scripts.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+Express, `pg` and `dotenv` are deliberate choices here; don't swap them for `Bun.serve`,
+`Bun.sql` or Bun's env loading.
 
-## APIs
+## Commands
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+- `bun run dev` (hot reload), `bun test`, `bun run typecheck`, `bun run lint` (oxlint),
+  `bun run format` (Prettier: 4 spaces, single quotes, no trailing commas, 100 columns).
+- Use `bun` / `bunx` rather than node, npm or npx.
+- The Husky pre-commit hook runs oxlint and Prettier on staged files; commitlint enforces
+  Conventional Commits.
 
-## Testing
+## Structure and conventions
 
-Use `bun test` to run tests.
+- `src/modules/routes/*.ts` → `controllers/*.controller.ts` → `services/*.services.ts`.
+  Routes add `requireAuth` (and `requireAdmin` for catalog writes), `validateBody` /
+  `validateParams` with a Zod schema, and wrap handlers in `asyncHandler`. Mount routers in
+  `src/app/app.ts`.
+- Zod request schemas live in `src/common/zodSchema/` (`z.strictObject`, `.meta({ id })`, and
+  exported `z.infer` types). Express 5's `req.query` can't be reassigned, so parse query
+  schemas in the controller.
+- Respond with `ApiResponses.ok` / `create`; fail with `ApiError` (`badRequest`, `notFound`, …).
+  The error middleware maps ZodError to 400 and known Prisma errors (P2002, P2003, P2025).
+- Scope every user query by the session's `userId` (`res.locals.session.session.userId`), so
+  another user's id reads as 404.
+- Every new route also goes into the OpenAPI document: `src/docs/openapi.ts` for paths and
+  `src/docs/schemas.ts` for response shapes. `src/docs/openapi.test.ts` checks the paths exist.
+- Pure logic is in `src/common/utils/` with a colocated `*.test.ts` (`liftMetrics`, `nutrition`).
+- oxlint's `no-console` allows only `warn` and `error`.
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+## Database
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
+- Schema: `prisma/schema.prisma`; generated client in `src/generated/prisma` (`bun run
+db:generate`). Prisma config is `prisma.config.ts`.
+- `DATABASE_URL` is a shared Neon database (it can take ~7 s to wake up). There is no shadow
+  database, so `prisma migrate dev` / `migrate diff --from-migrations` don't work. To add a
+  migration: edit the schema, write the SQL with
+  `bunx --bun prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`
+  into `prisma/migrations/<timestamp>_<name>/migration.sql`, review it, then apply it with
+  `bun run db:deploy`. Ask before applying anything that drops or rewrites data.
+- `Food_Items`, `Nutrition_Information`, `Meal_Time` and `Diet` are unused placeholders.
 
-## Frontend
+## AI and meals
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+- `src/lib/ai.ts` is the only place that calls an LLM: `generateJson({ system, prompt, schema,
+schemaName })` sends a Zod schema as JSON Schema, validates the answer, and throws `ApiError`
+  503 (no key), 502 (provider failed) or `AiOutputError` (bad output, callers may retry once).
+  The provider is chosen by `AI_PROVIDER` / `AI_MODEL` (Gemini via `@google/genai`, OpenAI via
+  fetch). Never call a provider SDK directly from a feature.
+- Gemini rejects `maxItems` in a response schema with a bare `400 INVALID_ARGUMENT`; the adapter
+  strips it, and Zod still enforces it. Bisect schema keywords when Gemini returns that error.
+- Meals (`/api/v1/meals`, design in `MEAL_LOGGING.md`): the AI returns grams plus nutrients per
+  100 g for each food. The server checks plausibility (`checkPer100g`), scales, sums and rounds
+  (`src/common/utils/nutrition.ts`, whose `NUTRIENTS` table defines every reported nutrient).
+  `meal_item` stores grams and `per100g` JSON; totals are computed on read, never stored.
+  `POST /meals` analyses and saves; `POST /meals/analyze` only analyses.
+- Bump `PROMPT_VERSION` in `meal.services.ts` whenever the prompt changes.
+- Not built yet: per-user rate limiting of AI calls, the `Food` cache table from the design doc,
+  and editing logged items.
 
-Server:
+## Email and password reset
 
-```ts#index.ts
-import index from "./index.html"
+- `src/lib/email.ts` is the only place that sends email (Resend, `RESEND_API_KEY`, `EMAIL_FROM`);
+  templates are pure builders in `src/common/utils/authEmails.ts`.
+- Forgot password uses Better Auth's `emailOTP` plugin, limited to password resets: its other
+  endpoints are in `disabledPaths` in `src/lib/auth.ts`. The app calls
+  `/api/auth/email-otp/request-password-reset` then `/api/auth/email-otp/reset-password`.
+  Google-only accounts get a "sign in with Google" email instead of a code, so a reset can't add
+  a password to them. A reset revokes every session.
+- The request endpoint always answers `success` and only logs a failed send, so a missing key
+  shows up in the server logs, not in the app.
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
+## Commits
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+Conventional Commits with a scope (`feat(meals): …`). No `Co-Authored-By` or other AI
+attribution lines.
