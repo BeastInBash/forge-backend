@@ -27,6 +27,9 @@ model User {
   exercises     Exercise[]
   lift_logs     Lift_Log[]
   meals         Meal[]
+  water_goal    Water_Goal?
+  water_logs    Water_Log[]
+  push_tokens   Push_Token[]
   /// Onboarding answers; each one is optional because every step can be skipped
   age           Int?
   /// Height in cm
@@ -208,6 +211,66 @@ model Meal_Item {
 
   @@index([mealId])
   @@map("meal_item")
+}
+
+/// The user's daily water target and the window the app reminds them to drink in
+model Water_Goal {
+  userId              String    @id
+  /// Daily target in ml
+  dailyGoalMl         Int
+  remindersEnabled    Boolean   @default(true)
+  /// First and last reminder as local "HH:mm" in `timezone`
+  reminderStart       String    @default("08:00")
+  reminderEnd         String    @default("22:00")
+  /// Minutes between reminders
+  reminderIntervalMin Int       @default(120)
+  /// IANA zone, e.g. "Asia/Karachi"; decides when the user's day starts
+  timezone            String
+  /// When the last reminder push went out, so a slot is never sent twice
+  lastReminderAt      DateTime?
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("water_goal")
+}
+
+/// One drink of water
+model Water_Log {
+  id        String   @id @default(uuid())
+  userId    String
+  amountMl  Int
+  drankAt   DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, drankAt])
+  @@map("water_log")
+}
+
+/// One device that can receive push notifications, by its Expo push token
+model Push_Token {
+  /// "ExponentPushToken[...]"; a device signed in to another account moves to that user
+  token     String   @id
+  userId    String
+  /// "ios" | "android"
+  platform  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_token")
+}
+
+/// A push Expo accepted; its delivery receipt is checked on a later run, then the row is deleted
+model Push_Ticket {
+  /// Expo's ticket id
+  id        String   @id
+  token     String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("push_ticket")
 }
 
 model Food_Items {

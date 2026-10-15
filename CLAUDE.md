@@ -64,6 +64,27 @@ schemaName })` sends a Zod schema as JSON Schema, validates the answer, and thro
 - Not built yet: per-user rate limiting of AI calls, the `Food` cache table from the design doc,
   and editing logged items.
 
+## Water
+
+- `/api/v1/water`: `water_goal` (one row per user: daily ml, reminder window as local "HH:mm",
+  interval, IANA `timezone`) and `water_log` (one drink). A day is bounded at local midnight in
+  the goal's time zone (`localDayRange` in `src/common/utils/water.ts`).
+- Reminders are server-sent pushes. A scheduler calls `GET /api/v1/cron/water-reminders`
+  (`requireCronSecret`: `Authorization: Bearer <CRON_SECRET>`) every 15 minutes; `dueReminder`
+  sends each slot at most once (`water_goal.lastReminderAt`), skips slots over 30 minutes old and
+  users who have met today's goal.
+
+## Push notifications
+
+- `src/lib/push.ts` is the only place that sends push notifications (`expo-server-sdk`, optional
+  `EXPO_ACCESS_TOKEN`); it has no database access. `push.services.ts` stores tickets and deletes
+  tokens: `deliverPush(messages)` is what features call.
+- The app registers its Expo token with `POST /api/v1/notifications/push-token` after sign-in and
+  removes it with `DELETE` on sign-out. `push_token` is keyed by token, so a shared device moves
+  to whoever signed in last. `POST /api/v1/notifications/test` pushes to your own devices.
+- Expo returns a ticket per push; the receipt (delivered or `DeviceNotRegistered`) is ready after
+  ~15 minutes. Each cron run checks receipts of older tickets and deletes dead tokens.
+
 ## Email and password reset
 
 - `src/lib/email.ts` is the only place that sends email (Resend, `RESEND_API_KEY`, `EMAIL_FROM`);

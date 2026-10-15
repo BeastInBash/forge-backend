@@ -21,6 +21,16 @@ import {
     mealIdParamsSchema
 } from '../common/zodSchema/mealSchema';
 import {
+    waterDayQuerySchema,
+    waterGoalBodySchema,
+    waterLogBodySchema,
+    waterLogIdParamsSchema
+} from '../common/zodSchema/waterSchema';
+import {
+    registerPushTokenBodySchema,
+    removePushTokenBodySchema
+} from '../common/zodSchema/notificationSchema';
+import {
     errorResponseSchema,
     exerciseResponseSchema,
     exerciseSummarySchema,
@@ -35,6 +45,9 @@ import {
     onboardingResponseSchema,
     profileResponseSchema,
     successResponse,
+    waterDaySchema,
+    waterGoalSchema,
+    waterLogSchema,
     workoutPlanResponseSchema
 } from './schemas';
 
@@ -75,10 +88,18 @@ const createAppDocument = () =>
             { name: 'Workouts', description: 'Workout plans' },
             { name: 'Exercises', description: 'Exercise catalog' },
             { name: 'Lifts', description: 'Logged sets and progress per exercise' },
-            { name: 'Meals', description: 'AI nutrition estimates for meals' }
+            { name: 'Meals', description: 'AI nutrition estimates for meals' },
+            { name: 'Water', description: 'Daily water goal, reminders and intake' },
+            { name: 'Notifications', description: 'Devices that receive push notifications' },
+            { name: 'Cron', description: 'Scheduled jobs, called with CRON_SECRET' }
         ],
         components: {
             securitySchemes: {
+                cronSecret: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    description: 'CRON_SECRET, as Vercel Cron sends it'
+                },
                 sessionCookie: {
                     type: 'apiKey',
                     in: 'cookie',
@@ -142,7 +163,7 @@ const createAppDocument = () =>
                     tags: ['Profile'],
                     summary: 'Delete the account',
                     description:
-                        "Permanently deletes the signed-in user with their sessions, sign-in methods, workout plans, lift logs and meals. Exercises they added to the catalog stay, without a creator. Can't be undone.",
+                        "Permanently deletes the signed-in user with their sessions, sign-in methods, workout plans, lift logs, meals, water logs and registered devices. Exercises they added to the catalog stay, without a creator. Can't be undone.",
                     security: sessionSecurity,
                     responses: {
                         '200': {
@@ -491,6 +512,217 @@ const createAppDocument = () =>
                         ),
                         '502': errorResponse('The AI provider failed or timed out'),
                         '503': errorResponse('The AI provider key is not configured')
+                    }
+                }
+            },
+            '/api/v1/water/goal': {
+                get: {
+                    tags: ['Water'],
+                    summary: 'The daily water goal',
+                    description:
+                        'The goal and reminder settings, with the reminder times the app should schedule. `data` is null until the user sets a goal.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'The goal, or null',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        waterGoalSchema.nullable(),
+                                        'GetWaterGoalResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '500': errorResponse('Unexpected server error')
+                    }
+                },
+                put: {
+                    tags: ['Water'],
+                    summary: 'Set the daily water goal',
+                    description:
+                        'Creates or replaces the goal and reminder window. Reminders run from `reminderStart` every `reminderIntervalMin` minutes up to `reminderEnd`, in `timezone`.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: waterGoalBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Goal saved',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(waterGoalSchema, 'SetWaterGoalResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                }
+            },
+            '/api/v1/water/day': {
+                get: {
+                    tags: ['Water'],
+                    summary: "A day's water intake",
+                    description:
+                        "What the user drank on one local day (today by default), against their goal. The day is bounded in the goal's time zone.",
+                    security: sessionSecurity,
+                    requestParams: { query: waterDayQuerySchema },
+                    responses: {
+                        '200': {
+                            description: 'The day',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(waterDaySchema, 'GetWaterDayResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                }
+            },
+            '/api/v1/water/logs': {
+                post: {
+                    tags: ['Water'],
+                    summary: 'Log a drink',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: waterLogBodySchema } }
+                    },
+                    responses: {
+                        '201': {
+                            description: 'Water logged',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(waterLogSchema, 'LogWaterResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                }
+            },
+            '/api/v1/water/logs/{logId}': {
+                delete: {
+                    tags: ['Water'],
+                    summary: 'Delete a logged drink',
+                    security: sessionSecurity,
+                    requestParams: { path: waterLogIdParamsSchema },
+                    responses: {
+                        '200': {
+                            description: 'Water log deleted',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'DeleteWaterLogResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '404': errorResponse('No water log with that id belongs to this user')
+                    }
+                }
+            },
+            '/api/v1/notifications/push-token': {
+                post: {
+                    tags: ['Notifications'],
+                    summary: 'Register this device',
+                    description:
+                        'Saves the Expo push token from `getExpoPushTokenAsync()` so the user gets reminders on this device. Call it after sign-in and whenever the token changes. A device signed in to another account moves to this one.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: registerPushTokenBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Device registered',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'RegisterPushTokenResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                },
+                delete: {
+                    tags: ['Notifications'],
+                    summary: 'Unregister this device',
+                    description:
+                        "Call on sign-out so the device stops getting this user's notifications.",
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: removePushTokenBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Device removed',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(z.null(), 'RemovePushTokenResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
+                    }
+                }
+            },
+            '/api/v1/notifications/test': {
+                post: {
+                    tags: ['Notifications'],
+                    summary: 'Send a test notification',
+                    description:
+                        'Pushes a test notification to every device of the signed-in user.',
+                    security: sessionSecurity,
+                    responses: {
+                        '200': {
+                            description: 'Sent',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        z.object({ sent: z.int() }),
+                                        'SendTestPushResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('No valid session cookie'),
+                        '404': errorResponse('The user has no registered device'),
+                        '500': errorResponse('Unexpected server error')
+                    }
+                }
+            },
+            '/api/v1/cron/water-reminders': {
+                get: {
+                    tags: ['Cron'],
+                    summary: 'Send due water reminders',
+                    description:
+                        "Pushes a reminder to every user whose reminder time has just passed and who is short of today's goal, then checks earlier delivery receipts and forgets uninstalled devices. Call every 15 minutes.",
+                    security: [{ cronSecret: [] }],
+                    responses: {
+                        '200': {
+                            description: 'Run finished',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        z.object({
+                                            reminders: z.object({ due: z.int(), sent: z.int() }),
+                                            receipts: z.object({
+                                                checked: z.int(),
+                                                removedTokens: z.int()
+                                            })
+                                        }),
+                                        'RunWaterRemindersResponse'
+                                    )
+                                }
+                            }
+                        },
+                        '401': errorResponse('Missing or wrong CRON_SECRET'),
+                        '500': errorResponse('Unexpected server error'),
+                        '503': errorResponse('CRON_SECRET is not set on the server')
                     }
                 }
             },

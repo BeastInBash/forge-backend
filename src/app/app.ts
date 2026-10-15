@@ -8,6 +8,9 @@ import exerciseRoute from '../modules/routes/exercise';
 import profileRouter from '../modules/routes/profile';
 import liftRouter from '../modules/routes/lifts';
 import mealRouter from '../modules/routes/meals';
+import waterRouter from '../modules/routes/water';
+import notificationRouter from '../modules/routes/notifications';
+import cronRouter from '../modules/routes/cron';
 import docsRouter from '../docs/docs.routes';
 import { deleteAccountPage, privacyPolicyPage } from '../legal/pages';
 import { asyncHandler } from '../common/utils/asyncHandler';
@@ -43,6 +46,9 @@ export const createApplication = () => {
     app.use('/api/v1/profile', profileRouter);
     app.use('/api/v1/lifts', liftRouter);
     app.use('/api/v1/meals', mealRouter);
+    app.use('/api/v1/water', waterRouter);
+    app.use('/api/v1/notifications', notificationRouter);
+    app.use('/api/v1/cron', cronRouter);
     // Public pages linked from Google Play and the app
     app.get('/privacy', (_req, res) => {
         res.type('html').send(privacyPolicyPage);

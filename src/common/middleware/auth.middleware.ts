@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { timingSafeEqual } from 'node:crypto';
 import { fromNodeHeaders } from 'better-auth/node';
 import { auth } from '../../lib/auth';
 import { env } from '../../lib/env';
@@ -43,6 +44,18 @@ export const isAdmin = (session: AuthSession) => adminEmails.has(session.user.em
 export const requireAdmin = (_req: Request, res: Response, next: NextFunction) => {
     if (!isAdmin(res.locals.session)) {
         return next(ApiError.forbidden('Only admins can change the exercise catalog'));
+    }
+    next();
+};
+
+/** For scheduler-only routes: requires `Authorization: Bearer <CRON_SECRET>` (what Vercel Cron sends). */
+export const requireCronSecret = (req: Request, _res: Response, next: NextFunction) => {
+    if (!env.CRON_SECRET) return next(new ApiError(503, 'CRON_SECRET is not set'));
+    const given = Buffer.from(req.headers.authorization ?? '');
+    const expected = Buffer.from(`Bearer ${env.CRON_SECRET}`);
+    // Constant-time, so response timing doesn't leak how much of the secret matched
+    if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+        return next(ApiError.unauthorized());
     }
     next();
 };

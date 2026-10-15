@@ -38,7 +38,11 @@ const envSchema = z.object({
     RESEND_API_KEY: z.string().optional(),
     // Sender for auth emails. Resend's shared address only delivers to the Resend account's own
     // email, so production needs an address on a domain verified in Resend.
-    EMAIL_FROM: z.string().default('Forge <onboarding@resend.dev>')
+    EMAIL_FROM: z.string().default('Forge <onboarding@resend.dev>'),
+    // Only needed when "Enhanced Push Security" is on in the Expo project's settings
+    EXPO_ACCESS_TOKEN: z.string().optional(),
+    // Bearer token the scheduler sends to /api/v1/cron/*; those routes return 503 until it is set
+    CRON_SECRET: z.string().min(16).optional()
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

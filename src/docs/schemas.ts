@@ -282,3 +282,42 @@ export const mealListSchema = z
             .meta({ description: 'Pass as `before` for the next page; null on the last page' })
     })
     .meta({ id: 'MealList' });
+
+export const waterGoalSchema = z
+    .object({
+        dailyGoalMl: z.int(),
+        remindersEnabled: z.boolean(),
+        reminderStart: z.string().meta({ description: 'Local "HH:mm"' }),
+        reminderEnd: z.string().meta({ description: 'Local "HH:mm"' }),
+        reminderIntervalMin: z.int(),
+        timezone: z.string(),
+        updatedAt: z.iso.datetime(),
+        reminders: z
+            .object({
+                times: z.array(z.string()).meta({
+                    description: 'Local "HH:mm" times to schedule a daily notification at'
+                }),
+                perReminderMl: z
+                    .int()
+                    .meta({ description: 'How much to drink at each, so the goal is met' })
+            })
+            .nullable()
+            .meta({ description: 'Null when reminders are off' })
+    })
+    .meta({ id: 'WaterGoal' });
+
+export const waterLogSchema = z
+    .object({ id: z.uuid(), amountMl: z.int(), drankAt: z.iso.datetime() })
+    .meta({ id: 'WaterLog' });
+
+export const waterDaySchema = z
+    .object({
+        date: z.iso.date(),
+        timezone: z.string(),
+        goalMl: z.int().nullable().meta({ description: 'Null until the user sets a goal' }),
+        consumedMl: z.int(),
+        remainingMl: z.int().nullable(),
+        goalReached: z.boolean(),
+        logs: z.array(waterLogSchema)
+    })
+    .meta({ id: 'WaterDay' });

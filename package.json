@@ -55,6 +55,7 @@
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "expo-server-sdk": "^7.2.0",
     "express": "^5.2.1",
     "multer": "^2.4.0",
     "pg": "^8.23.0",

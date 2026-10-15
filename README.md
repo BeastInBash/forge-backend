@@ -35,23 +35,29 @@ Check it is up with `GET /health`.
 
 `src/lib/env.ts` validates these on startup and refuses to boot if a required one is missing.
 
-| Variable               | Required | Notes                                                                                             |
-| ---------------------- | -------- | ------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`         | yes      | Postgres connection string                                                                        |
-| `BETTER_AUTH_SECRET`   | yes      | `openssl rand -base64 32`                                                                         |
-| `BETTER_AUTH_URL`      | yes      | Public URL of this server. Must be reachable from the phone when testing Google sign-in           |
-| `PORT`                 | no       | Defaults to `3000`                                                                                |
-| `NODE_ENV`             | no       | `development` (default), `production` or `test`. `production` disables `/docs`                    |
-| `CORS_ORIGIN`          | no       | Comma-separated browser origins, e.g. `http://localhost:8081` for Expo web. Native apps skip CORS |
-| `GOOGLE_CLIENT_ID`     | no       | Google sign-in is enabled only when both Google variables are set                                 |
-| `GOOGLE_CLIENT_SECRET` | no       |                                                                                                   |
-| `CLOUDINARY_URL`       | no       | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. Needed for image uploads and the seed         |
-| `AI_PROVIDER`          | no       | `gemini` (default) or `openai`: which provider `src/lib/ai.ts` calls                              |
-| `AI_MODEL`             | no       | Pinned model ID; defaults to `gemini-3.5-flash-lite` for Gemini, required for OpenAI              |
-| `GEMINI_API_KEY`       | no       | Needed for `POST /api/v1/meals/analyze` when the provider is Gemini (503 without it)              |
-| `OPENAI_API_KEY`       | no       | Needed when `AI_PROVIDER=openai`                                                                  |
-| `RESEND_API_KEY`       | no       | Sends password-reset codes. Without it no email goes out (the failure is logged)                  |
-| `EMAIL_FROM`           | no       | Sender, e.g. `Forge <no-reply@your-domain>` on a Resend-verified domain                           |
+| Variable               | Required | Notes                                                                                                     |
+| ---------------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`         | yes      | Postgres connection string                                                                                |
+| `BETTER_AUTH_SECRET`   | yes      | `openssl rand -base64 32`                                                                                 |
+| `BETTER_AUTH_URL`      | yes      | Public URL of this server. Must be reachable from the phone when testing Google sign-in                   |
+| `PORT`                 | no       | Defaults to `3000`                                                                                        |
+| `NODE_ENV`             | no       | `development` (default), `production` or `test`. `production` disables `/docs`                            |
+| `CORS_ORIGIN`          | no       | Comma-separated browser origins, e.g. `http://localhost:8081` for Expo web. Native apps skip CORS         |
+| `GOOGLE_CLIENT_ID`     | no       | Google sign-in is enabled only when both Google variables are set                                         |
+| `GOOGLE_CLIENT_SECRET` | no       |                                                                                                           |
+| `CLOUDINARY_URL`       | no       | `cloudinary://<api_key>:<api_secret>@<cloud_name>`. Needed for image uploads and the seed                 |
+| `AI_PROVIDER`          | no       | `gemini` (default) or `openai`: which provider `src/lib/ai.ts` calls                                      |
+| `AI_MODEL`             | no       | Pinned model ID; defaults to `gemini-3.5-flash-lite` for Gemini, required for OpenAI                      |
+| `GEMINI_API_KEY`       | no       | Needed for `POST /api/v1/meals/analyze` when the provider is Gemini (503 without it)                      |
+| `OPENAI_API_KEY`       | no       | Needed when `AI_PROVIDER=openai`                                                                          |
+| `RESEND_API_KEY`       | no       | Sends password-reset codes. Without it no email goes out (the failure is logged)                          |
+| `EMAIL_FROM`           | no       | Sender, e.g. `Forge <no-reply@your-domain>` on a Resend-verified domain                                   |
+| `CRON_SECRET`          | no       | 16+ characters (`openssl rand -hex 32`). Scheduler sends it as a Bearer token; cron routes 503 without it |
+| `EXPO_ACCESS_TOKEN`    | no       | Only if "Enhanced Push Security" is on for the Expo project                                               |
+
+Water reminders are sent by `GET /api/v1/cron/water-reminders`, which something has to call
+every 15 minutes with `Authorization: Bearer <CRON_SECRET>`. Vercel's Hobby plan runs crons only
+once a day, so use an external scheduler such as cron-job.org (or a Vercel cron on Pro).
 
 For Google sign-in, create a "Web application" OAuth client in Google Cloud Console and add
 `<BETTER_AUTH_URL>/api/auth/callback/google` as an authorised redirect URI. When testing on a real
