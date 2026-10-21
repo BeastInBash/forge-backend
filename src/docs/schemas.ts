@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { muscleSchema } from '../common/zodSchema/workoutSchema';
 import { fitnessGoalSchema } from '../common/zodSchema/profileSchema';
 import { mealTimeSchema } from '../common/zodSchema/mealSchema';
 import { NUTRIENTS, type NutrientGroup } from '../common/utils/nutrition';
@@ -43,6 +44,8 @@ export const exerciseResponseSchema = z
             .meta({ description: 'Lowercased, trimmed name; unique across the catalog' }),
         exercise_video: z.string().nullable(),
         exercise_icon: z.string().nullable(),
+        primary_muscles: z.array(muscleSchema).meta({ description: 'Main muscles worked' }),
+        secondary_muscles: z.array(muscleSchema).meta({ description: 'Muscles that assist' }),
         createdById: z.string().nullable()
     })
     .meta({ id: 'Exercise' });
@@ -143,7 +146,9 @@ export const exerciseSummarySchema = z
             description:
                 'Cloudinary URL of the original image; add e.g. `f_auto,q_auto,w_192,h_192,c_fill` after `/upload/` for a thumbnail'
         }),
-        exercise_video: z.string().nullable()
+        exercise_video: z.string().nullable(),
+        primary_muscles: z.array(muscleSchema).meta({ description: 'Main muscles worked' }),
+        secondary_muscles: z.array(muscleSchema).meta({ description: 'Muscles that assist' })
     })
     .meta({ id: 'ExerciseSummary' });
 

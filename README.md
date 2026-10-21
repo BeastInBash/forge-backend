@@ -66,20 +66,21 @@ as `BETTER_AUTH_URL`.
 
 ## Scripts
 
-| Script                      | What it does                                                    |
-| --------------------------- | --------------------------------------------------------------- |
-| `bun run dev`               | Start `src/server.ts` with hot reload                           |
-| `bun run build` / `start`   | Bundle for Bun into `dist/` and run it                          |
-| `bun run vercel-build`      | Generate the Prisma client and bundle `src/index.ts` for Vercel |
-| `bun run typecheck`         | `tsc --noEmit`                                                  |
-| `bun run lint` / `lint:fix` | oxlint                                                          |
-| `bun run format`            | Prettier                                                        |
-| `bun test`                  | Run the `*.test.ts` files with Bun's test runner                |
-| `bun run db:migrate`        | Create and apply a migration in development                     |
-| `bun run db:deploy`         | Apply pending migrations (CI / production)                      |
-| `bun run db:generate`       | Regenerate the Prisma client into `src/generated/prisma`        |
-| `bun run db:studio`         | Open Prisma Studio                                              |
-| `bun run db:seed:exercises` | Upload `workout_images/` to Cloudinary and upsert the exercises |
+| Script                        | What it does                                                    |
+| ----------------------------- | --------------------------------------------------------------- |
+| `bun run dev`                 | Start `src/server.ts` with hot reload                           |
+| `bun run build` / `start`     | Bundle for Bun into `dist/` and run it                          |
+| `bun run vercel-build`        | Generate the Prisma client and bundle `src/index.ts` for Vercel |
+| `bun run typecheck`           | `tsc --noEmit`                                                  |
+| `bun run lint` / `lint:fix`   | oxlint                                                          |
+| `bun run format`              | Prettier                                                        |
+| `bun test`                    | Run the `*.test.ts` files with Bun's test runner                |
+| `bun run db:migrate`          | Create and apply a migration in development                     |
+| `bun run db:deploy`           | Apply pending migrations (CI / production)                      |
+| `bun run db:generate`         | Regenerate the Prisma client into `src/generated/prisma`        |
+| `bun run db:studio`           | Open Prisma Studio                                              |
+| `bun run db:seed:exercises`   | Upload `workout_images/` to Cloudinary and upsert the exercises |
+| `bun run db:backfill:muscles` | Fill in exercises' target muscles (`--dry-run` to preview)      |
 
 Commits are checked by commitlint (Conventional Commits), and staged files are linted and formatted
 by a Husky pre-commit hook.

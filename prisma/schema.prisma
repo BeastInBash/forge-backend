@@ -111,15 +111,19 @@ model Workout_Plan {
 }
 
 model Exercise {
-  id             String             @id @default(uuid())
-  exercise_name  String
-  name_key       String             @unique
-  exercise_video String?
-  exercise_icon  String?
-  createdById    String?
-  createdBy      User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  workout_items  Workout_Exercise[]
-  lift_logs      Lift_Log[]
+  id                String             @id @default(uuid())
+  exercise_name     String
+  name_key          String             @unique
+  exercise_video    String?
+  exercise_icon     String?
+  /// Main muscles worked, labels from MUSCLES in src/common/utils/muscles.ts
+  primary_muscles   String[]           @default([])
+  /// Muscles that assist
+  secondary_muscles String[]           @default([])
+  createdById       String?
+  createdBy         User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  workout_items     Workout_Exercise[]
+  lift_logs         Lift_Log[]
 
   @@index([createdById])
   @@map("exercise")

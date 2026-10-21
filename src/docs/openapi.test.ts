@@ -11,6 +11,7 @@ describe('OpenAPI document', () => {
         expect(paths).toContain('/api/v1/profile/onboarding');
         expect(paths).toContain('/api/v1/exercise');
         expect(paths).toContain('/api/v1/workout/{workoutId}');
+        expect(paths).toContain('/api/v1/exercise/{exerciseId}');
         expect(paths).toContain('/api/v1/exercise/{exerciseId}/image');
         expect(paths).toContain('/api/v1/meals/analyze');
         expect(paths).toContain('/api/v1/meals/{mealId}');

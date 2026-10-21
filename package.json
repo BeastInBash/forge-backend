@@ -14,6 +14,7 @@
     "db:generate": "bunx --bun prisma generate",
     "db:studio": "bunx --bun prisma studio",
     "db:seed:exercises": "bun ./src/scripts/seed-exercises.ts",
+    "db:backfill:muscles": "bun ./src/scripts/backfill-muscles.ts",
     "prepare": "husky",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

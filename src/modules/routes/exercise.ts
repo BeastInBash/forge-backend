@@ -6,13 +6,15 @@ import { asyncHandler } from '../../common/utils/asyncHandler';
 import {
     createExerciseFormSchema,
     createExercisesBodySchema,
-    exerciseIdParamsSchema
+    exerciseIdParamsSchema,
+    updateExerciseBodySchema
 } from '../../common/zodSchema/workoutSchema';
 import {
     createExercises,
     createExerciseWithImage,
     listExercises,
-    setExerciseImage
+    setExerciseImage,
+    updateExercise
 } from '../controllers/exercise.controller';
 
 const exerciseRoute = Router();
@@ -37,6 +39,16 @@ exerciseRoute.post(
     requireAdmin,
     validateBody(createExercisesBodySchema),
     asyncHandler(createExercises)
+);
+
+// Renames an exercise or sets its target muscles. Admins only.
+exerciseRoute.patch(
+    '/:exerciseId',
+    requireAuth,
+    requireAdmin,
+    validateParams(exerciseIdParamsSchema),
+    validateBody(updateExerciseBodySchema),
+    asyncHandler(updateExercise)
 );
 
 // Replaces the exercise's image. Admins only.

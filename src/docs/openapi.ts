@@ -5,6 +5,7 @@ import { env } from '../lib/env';
 import {
     createExercisesBodySchema,
     exerciseIdParamsSchema,
+    updateExerciseBodySchema,
     workoutBodySchema,
     workoutIdParamsSchema
 } from '../common/zodSchema/workoutSchema';
@@ -752,7 +753,7 @@ const createAppDocument = () =>
                     tags: ['Exercises'],
                     summary: 'Add an exercise with its image',
                     description:
-                        'Multipart form with `exercise_name` and `image` (PNG, JPEG or WebP, max 4 MB). The name is checked for duplicates (ignoring case) before the image is uploaded to Cloudinary.',
+                        'Multipart form with `exercise_name`, `image` (PNG, JPEG or WebP, max 4 MB) and optionally `primary_muscles` / `secondary_muscles` as JSON arrays of muscle labels in a text field. The name is checked for duplicates (ignoring case) before the image is uploaded to Cloudinary.',
                     security: sessionSecurity,
                     requestBody: {
                         required: true,
@@ -767,7 +768,16 @@ const createAppDocument = () =>
                                             minLength: 1,
                                             maxLength: 100
                                         },
-                                        image: { type: 'string', format: 'binary' }
+                                        image: { type: 'string', format: 'binary' },
+                                        primary_muscles: {
+                                            type: 'string',
+                                            description:
+                                                'JSON array of muscles, e.g. ["Upper chest"]'
+                                        },
+                                        secondary_muscles: {
+                                            type: 'string',
+                                            description: 'JSON array of muscles, e.g. ["Triceps"]'
+                                        }
                                     }
                                 }
                             }
@@ -819,6 +829,37 @@ const createAppDocument = () =>
                         ...commonErrors,
                         '403': errorResponse('Only admins can change the catalog'),
                         '409': errorResponse('An exercise with that name already exists')
+                    }
+                }
+            },
+            '/api/v1/exercise/{exerciseId}': {
+                patch: {
+                    tags: ['Exercises'],
+                    summary: 'Rename an exercise or set its target muscles',
+                    description:
+                        'Send only the fields that change. A muscle list that is left out keeps its stored value; a muscle may not be both primary and secondary.',
+                    security: sessionSecurity,
+                    requestParams: { path: exerciseIdParamsSchema },
+                    requestBody: {
+                        required: true,
+                        content: { 'application/json': { schema: updateExerciseBodySchema } }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'The updated exercise',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        exerciseResponseSchema,
+                                        'UpdateExerciseResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '403': errorResponse('Only admins can change the catalog'),
+                        '404': errorResponse('No exercise with that id'),
+                        '409': errorResponse('Another exercise already has that name')
                     }
                 }
             },

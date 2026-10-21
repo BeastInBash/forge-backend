@@ -2,7 +2,10 @@ import prisma from '../../lib/db';
 import ApiError from '../../common/libs/ApiError';
 import { normalizeName } from '../../common/utils/normalizeName';
 import { uploadExerciseImage } from '../../lib/cloudinary';
-import type { CatalogExerciseInput } from '../../common/zodSchema/workoutSchema';
+import type {
+    CatalogExerciseInput,
+    UpdateExerciseBody
+} from '../../common/zodSchema/workoutSchema';
 
 // Add exercises to the catalog
 export const createExercisesService = async (exercises: CatalogExerciseInput[], userId: string) => {
@@ -60,7 +63,14 @@ export const setExerciseImageService = async (
 // The whole catalog, alphabetically, for pickers and the exercise library
 export const listExercisesService = () =>
     prisma.exercise.findMany({
-        select: { id: true, exercise_name: true, exercise_icon: true, exercise_video: true },
+        select: {
+            id: true,
+            exercise_name: true,
+            exercise_icon: true,
+            exercise_video: true,
+            primary_muscles: true,
+            secondary_muscles: true
+        },
         orderBy: { exercise_name: 'asc' }
     });
 
@@ -69,7 +79,11 @@ export const listExercisesService = () =>
 export const createExerciseWithImageService = async (
     exerciseName: string,
     file: { buffer: Uint8Array; mimetype: string },
-    userId: string
+    userId: string,
+    muscles: { primary_muscles: string[]; secondary_muscles: string[] } = {
+        primary_muscles: [],
+        secondary_muscles: []
+    }
 ) => {
     const nameKey = normalizeName(exerciseName);
     const existing = await prisma.exercise.findUnique({
@@ -85,7 +99,47 @@ export const createExerciseWithImageService = async (
             exercise_name: exerciseName,
             name_key: nameKey,
             exercise_icon: imageUrl,
+            ...muscles,
             createdById: userId
+        }
+    });
+};
+
+// Rename an exercise or set the muscles it targets. A list that isn't sent keeps its stored
+// value, and the overlap check runs against what the exercise will end up with.
+export const updateExerciseService = async (exerciseId: string, body: UpdateExerciseBody) => {
+    const exercise = await prisma.exercise.findUnique({
+        where: { id: exerciseId },
+        select: { name_key: true, primary_muscles: true, secondary_muscles: true }
+    });
+    if (!exercise) throw ApiError.notFound('Exercise not found');
+
+    const primary = body.primary_muscles ?? exercise.primary_muscles;
+    const secondary = body.secondary_muscles ?? exercise.secondary_muscles;
+    if (primary.some((muscle) => secondary.includes(muscle))) {
+        throw ApiError.badRequest('A muscle can be primary or secondary, not both');
+    }
+
+    const nameKey =
+        body.exercise_name === undefined ? undefined : normalizeName(body.exercise_name);
+    if (nameKey !== undefined && nameKey !== exercise.name_key) {
+        const taken = await prisma.exercise.findUnique({
+            where: { name_key: nameKey },
+            select: { exercise_name: true }
+        });
+        if (taken) throw ApiError.conflict(`"${taken.exercise_name}" is already in the catalog`);
+    }
+
+    // A concurrent rename to the same name_key still surfaces as P2002 -> 409 via the error handler
+    return prisma.exercise.update({
+        where: { id: exerciseId },
+        data: {
+            ...(body.exercise_name !== undefined && {
+                exercise_name: body.exercise_name,
+                name_key: nameKey
+            }),
+            primary_muscles: primary,
+            secondary_muscles: secondary
         }
     });
 };

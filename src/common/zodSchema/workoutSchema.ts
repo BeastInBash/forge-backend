@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MUSCLES } from '../utils/muscles';
 
 /**
  * Validation for the create-workout request body.
@@ -110,14 +111,64 @@ export const exerciseIdParamsSchema = z.strictObject({ exerciseId: z.uuid() });
 
 export type ExerciseIdParams = z.infer<typeof exerciseIdParamsSchema>;
 
+/** One of the fixed muscle labels in `src/common/utils/muscles.ts`. */
+export const muscleSchema = z.enum(MUSCLES).meta({ id: 'Muscle' });
+
+/** A set of muscles: no repeats, at most a handful. */
+const musclesSchema = z
+    .array(muscleSchema)
+    .max(8)
+    .refine((muscles) => new Set(muscles).size === muscles.length, 'A muscle is listed twice');
+
+/** A muscle can't be both a primary and a secondary target of one exercise. */
+const noOverlap = (value: { primary_muscles?: string[]; secondary_muscles?: string[] }) =>
+    !value.primary_muscles?.some((muscle) => value.secondary_muscles?.includes(muscle));
+const overlapError = {
+    message: 'A muscle can be primary or secondary, not both',
+    path: ['secondary_muscles']
+};
+
+/**
+ * Multipart sends every field as text, so the muscle lists arrive as JSON arrays in a string
+ * (`["Upper chest","Front delts"]`). Absent means none.
+ */
+const musclesFormField = z
+    .string()
+    .optional()
+    .transform((value, ctx) => {
+        if (!value) return [];
+        try {
+            return JSON.parse(value) as unknown;
+        } catch {
+            ctx.addIssue({ code: 'custom', message: 'Send the muscles as a JSON array' });
+            return z.NEVER;
+        }
+    })
+    .pipe(musclesSchema);
+
 /** Text fields of the multipart create-exercise form; the image arrives as `req.file`. */
 export const createExerciseFormSchema = z
     .strictObject({
-        exercise_name: z.string().trim().min(1).max(100)
+        exercise_name: z.string().trim().min(1).max(100),
+        primary_muscles: musclesFormField,
+        secondary_muscles: musclesFormField
     })
+    .refine(noOverlap, overlapError)
     .meta({ id: 'CreateExerciseForm' });
 
 export type CreateExerciseForm = z.infer<typeof createExerciseFormSchema>;
+
+/** Body for editing a catalog exercise; send only what changes. Admins only. */
+export const updateExerciseBodySchema = z
+    .strictObject({
+        exercise_name: z.string().trim().min(1).max(100).optional(),
+        primary_muscles: musclesSchema.optional(),
+        secondary_muscles: musclesSchema.optional()
+    })
+    .refine((body) => Object.keys(body).length > 0, 'Send at least one field to change')
+    .meta({ id: 'UpdateExerciseBody' });
+
+export type UpdateExerciseBody = z.infer<typeof updateExerciseBodySchema>;
 
 /** Route params for `/api/v1/workout/:workoutId`. */
 export const workoutIdParamsSchema = z.strictObject({ workoutId: z.uuid() });

@@ -3,7 +3,8 @@ import {
     createExercisesService,
     createExerciseWithImageService,
     listExercisesService,
-    setExerciseImageService
+    setExerciseImageService,
+    updateExerciseService
 } from '../services/exercises.services';
 import ApiError from '../../common/libs/ApiError';
 import ApiResponses from '../../common/libs/ApiResponses';
@@ -11,7 +12,8 @@ import { sendConditionalJson } from '../../common/utils/conditionalJson';
 import type {
     CatalogExerciseInput,
     CreateExerciseForm,
-    ExerciseIdParams
+    ExerciseIdParams,
+    UpdateExerciseBody
 } from '../../common/zodSchema/workoutSchema';
 
 export const createExercises = async (req: Request, res: Response) => {
@@ -37,12 +39,20 @@ export const listExercises = async (req: Request, res: Response) => {
 
 export const createExerciseWithImage = async (req: Request, res: Response) => {
     // req.body was validated by validateBody(createExerciseFormSchema) after multer parsed it
-    const { exercise_name } = req.body as CreateExerciseForm;
+    const { exercise_name, primary_muscles, secondary_muscles } = req.body as CreateExerciseForm;
     if (!req.file) throw ApiError.badRequest('Attach the image as multipart field "image"');
     const data = await createExerciseWithImageService(
         exercise_name,
         req.file,
-        res.locals.session.session.userId
+        res.locals.session.session.userId,
+        { primary_muscles, secondary_muscles }
     );
     return ApiResponses.create(res, 'Exercise created', data);
+};
+
+export const updateExercise = async (req: Request, res: Response) => {
+    // req.params and req.body were validated by exerciseIdParamsSchema / updateExerciseBodySchema
+    const { exerciseId } = req.params as ExerciseIdParams;
+    const data = await updateExerciseService(exerciseId, req.body as UpdateExerciseBody);
+    return ApiResponses.ok(res, 'Exercise updated', data);
 };

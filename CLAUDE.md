@@ -46,6 +46,17 @@ db:generate`). Prisma config is `prisma.config.ts`.
   `bun run db:deploy`. Ask before applying anything that drops or rewrites data.
 - `Food_Items`, `Nutrition_Information`, `Meal_Time` and `Diet` are unused placeholders.
 
+## Exercise catalog
+
+- `exercise.primary_muscles` / `secondary_muscles` are text arrays of labels from `MUSCLES` in
+  `src/common/utils/muscles.ts` (validated by `muscleSchema`); the app mirrors the list in
+  `Forge/src/features/exercises/muscles.ts`, so change both together.
+- Admins set them on create (multipart fields holding JSON arrays) and with
+  `PATCH /api/v1/exercise/:exerciseId` (name and/or muscles; a list left out keeps its value).
+- `bun run db:backfill:muscles [--dry-run] [--force]` fills them from the table in
+  `src/scripts/backfill-muscles.ts`, matched on `name_key`; it skips exercises that already have
+  muscles unless `--force`. Add a row there when seeding new exercises.
+
 ## AI and meals
 
 - `src/lib/ai.ts` is the only place that calls an LLM: `generateJson({ system, prompt, schema,
