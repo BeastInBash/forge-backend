@@ -6,7 +6,7 @@ const timeOfDaySchema = z
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use 24-hour "HH:mm"')
     .meta({ description: 'Local time of day, 24-hour "HH:mm"' });
 
-const timezoneSchema = z
+export const timezoneSchema = z
     .string()
     .refine(isValidTimezone, 'Unknown time zone')
     .meta({ description: 'IANA time zone, e.g. "Asia/Karachi"' });

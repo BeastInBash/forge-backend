@@ -288,6 +288,16 @@ export const mealListSchema = z
     })
     .meta({ id: 'MealList' });
 
+export const mealDaySchema = z
+    .object({
+        date: z.iso.date(),
+        timezone: z.string(),
+        mealCount: z.int(),
+        total: nutritionReportSchema,
+        units: mealReportShape.units
+    })
+    .meta({ id: 'MealDay' });
+
 export const waterGoalSchema = z
     .object({
         dailyGoalMl: z.int(),

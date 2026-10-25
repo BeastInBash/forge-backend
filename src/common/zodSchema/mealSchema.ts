@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { NUTRIENTS, type NutrientKey } from '../utils/nutrition';
+import { timezoneSchema } from './waterSchema';
 
 export const mealTimeSchema = z.enum(['breakfast', 'lunch', 'dinner', 'snack']);
 
@@ -68,6 +69,16 @@ export const listMealsQuerySchema = z.strictObject({
 });
 
 export type ListMealsQuery = z.infer<typeof listMealsQuerySchema>;
+
+/** Query for `GET /api/v1/meals/day`. */
+export const mealDayQuerySchema = z.strictObject({
+    /** The local day, "YYYY-MM-DD"; defaults to today in `timezone` */
+    date: z.iso.date().optional(),
+    /** Where the day starts and ends; defaults to UTC */
+    timezone: timezoneSchema.optional()
+});
+
+export type MealDayQuery = z.infer<typeof mealDayQuerySchema>;
 
 /** Route params for `/api/v1/meals/:mealId`. */
 export const mealIdParamsSchema = z.strictObject({ mealId: z.uuid() });

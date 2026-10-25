@@ -12,6 +12,7 @@ import {
     createMeal,
     deleteMeal,
     getMeal,
+    getMealDay,
     listMeals
 } from '../controllers/meal.controller';
 
@@ -27,6 +28,9 @@ mealRouter.post(
 mealRouter.get('/', requireAuth, asyncHandler(listMeals));
 
 mealRouter.post('/', requireAuth, validateBody(createMealBodySchema), asyncHandler(createMeal));
+
+// Before '/:mealId', which would otherwise reject "day" as a meal id
+mealRouter.get('/day', requireAuth, asyncHandler(getMealDay));
 
 mealRouter.get('/:mealId', requireAuth, validateParams(mealIdParamsSchema), asyncHandler(getMeal));
 

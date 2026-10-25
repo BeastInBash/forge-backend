@@ -3,12 +3,14 @@ import {
     analyzeMealService,
     createMealService,
     deleteMealService,
+    getMealDayService,
     getMealService,
     listMealsService
 } from '../services/meal.services';
 import ApiResponses from '../../common/libs/ApiResponses';
 import {
     listMealsQuerySchema,
+    mealDayQuerySchema,
     type AnalyzeMealBody,
     type CreateMealBody,
     type MealIdParams
@@ -34,6 +36,13 @@ export const listMeals = async (req: Request, res: Response) => {
     const query = listMealsQuerySchema.parse(req.query);
     const data = await listMealsService(res.locals.session.session.userId, query);
     return ApiResponses.ok(res, 'Meals', data);
+};
+
+export const getMealDay = async (req: Request, res: Response) => {
+    // req.query can't be reassigned in Express 5, so it is parsed here; a ZodError becomes a 400
+    const query = mealDayQuerySchema.parse(req.query);
+    const data = await getMealDayService(res.locals.session.session.userId, query);
+    return ApiResponses.ok(res, 'Nutrition for the day', data);
 };
 
 export const getMeal = async (req: Request, res: Response) => {

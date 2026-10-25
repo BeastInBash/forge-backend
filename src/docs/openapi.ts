@@ -19,6 +19,7 @@ import {
     analyzeMealBodySchema,
     createMealBodySchema,
     listMealsQuerySchema,
+    mealDayQuerySchema,
     mealIdParamsSchema
 } from '../common/zodSchema/mealSchema';
 import {
@@ -40,6 +41,7 @@ import {
     liftSummarySchema,
     createdMealSchema,
     mealAnalysisSchema,
+    mealDaySchema,
     mealDetailSchema,
     mealListSchema,
     meResponseSchema,
@@ -443,6 +445,27 @@ const createAppDocument = () =>
                         ),
                         '502': errorResponse('The AI provider failed or timed out'),
                         '503': errorResponse('The AI provider key is not configured')
+                    }
+                }
+            },
+            '/api/v1/meals/day': {
+                get: {
+                    tags: ['Meals'],
+                    summary: "A day's nutrition",
+                    description:
+                        'Calories, macros, vitamins and minerals of every meal eaten on one local day (today by default), summed by the server. The day is bounded at midnight in `timezone`.',
+                    security: sessionSecurity,
+                    requestParams: { query: mealDayQuerySchema },
+                    responses: {
+                        '200': {
+                            description: 'The day',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(mealDaySchema, 'GetMealDayResponse')
+                                }
+                            }
+                        },
+                        ...commonErrors
                     }
                 }
             },

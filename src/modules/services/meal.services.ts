@@ -16,8 +16,10 @@ import {
     type AnalyzeMealBody,
     type CreateMealBody,
     type ListMealsQuery,
+    type MealDayQuery,
     type MealItems
 } from '../../common/zodSchema/mealSchema';
+import { localDate, localDayRange } from '../../common/utils/water';
 import type { Prisma } from '../../generated/prisma/client';
 import { AiOutputError, generateJson } from '../../lib/ai';
 
@@ -253,6 +255,31 @@ export const listMealsService = async (userId: string, { before, limit }: ListMe
             };
         }),
         nextBefore: meals.length > limit ? page[page.length - 1]!.eatenAt : null
+    };
+};
+
+/**
+ * Everything eaten on one local day (today by default), summed over every item of every meal
+ * from the unrounded values, so it always matches the meals it covers.
+ */
+export const getMealDayService = async (userId: string, query: MealDayQuery) => {
+    const timezone = query.timezone ?? 'UTC';
+    const date = query.date ?? localDate(timezone);
+    const { from, to } = localDayRange(date, timezone);
+
+    const meals = await prisma.meal.findMany({
+        where: { userId, eatenAt: { gte: from, lt: to } },
+        include: itemsInclude
+    });
+    const scaled = meals.flatMap((meal) =>
+        toEstimatedItems(meal).map((item) => scaleNutrients(item.per100g, item.grams))
+    );
+    return {
+        date,
+        timezone,
+        mealCount: meals.length,
+        total: toNutritionReport(sumNutrients(scaled)),
+        units: NUTRIENT_UNITS
     };
 };
 
