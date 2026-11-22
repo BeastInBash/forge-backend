@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../../common/middleware/auth.middleware';
+import { aiRateLimit } from '../../common/middleware/aiRateLimit.middleware';
 import { validateBody, validateParams } from '../../common/middleware/validate.middleware';
 import { asyncHandler } from '../../common/utils/asyncHandler';
 import {
@@ -22,12 +23,19 @@ mealRouter.post(
     '/analyze',
     requireAuth,
     validateBody(analyzeMealBodySchema),
+    aiRateLimit('meal_analyze'),
     asyncHandler(analyzeMeal)
 );
 
 mealRouter.get('/', requireAuth, asyncHandler(listMeals));
 
-mealRouter.post('/', requireAuth, validateBody(createMealBodySchema), asyncHandler(createMeal));
+mealRouter.post(
+    '/',
+    requireAuth,
+    validateBody(createMealBodySchema),
+    aiRateLimit('meal_create'),
+    asyncHandler(createMeal)
+);
 
 // Before '/:mealId', which would otherwise reject "day" as a meal id
 mealRouter.get('/day', requireAuth, asyncHandler(getMealDay));

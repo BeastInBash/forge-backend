@@ -27,6 +27,7 @@ model User {
   exercises     Exercise[]
   lift_logs     Lift_Log[]
   meals         Meal[]
+  ai_usage      Ai_Usage[]
   water_goal    Water_Goal?
   water_logs    Water_Log[]
   push_tokens   Push_Token[]
@@ -215,6 +216,19 @@ model Meal_Item {
 
   @@index([mealId])
   @@map("meal_item")
+}
+
+/// One AI call a user made, counted by the per-user rate limit (src/common/utils/aiRateLimit.ts)
+model Ai_Usage {
+  id        String   @id @default(uuid())
+  userId    String
+  /// What the call was for, e.g. "meal_analyze" or "meal_create"
+  feature   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage")
 }
 
 /// The user's daily water target and the window the app reminds them to drink in

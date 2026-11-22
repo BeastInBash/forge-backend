@@ -50,6 +50,8 @@ Check it is up with `GET /health`.
 | `AI_MODEL`             | no       | Pinned model ID; defaults to `gemini-3.5-flash-lite` for Gemini, required for OpenAI                      |
 | `GEMINI_API_KEY`       | no       | Needed for `POST /api/v1/meals/analyze` when the provider is Gemini (503 without it)                      |
 | `OPENAI_API_KEY`       | no       | Needed when `AI_PROVIDER=openai`                                                                          |
+| `AI_LIMIT_PER_HOUR`    | no       | AI meal calls per user in a rolling hour (default 20); over it the meal routes answer 429                 |
+| `AI_LIMIT_PER_DAY`     | no       | AI meal calls per user in a rolling 24 hours (default 60)                                                 |
 | `RESEND_API_KEY`       | no       | Sends password-reset codes. Without it no email goes out (the failure is logged)                          |
 | `EMAIL_FROM`           | no       | Sender, e.g. `Forge <no-reply@your-domain>` on a Resend-verified domain                                   |
 | `CRON_SECRET`          | no       | 16+ characters (`openssl rand -hex 32`). Scheduler sends it as a Bearer token; cron routes 503 without it |

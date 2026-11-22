@@ -443,6 +443,9 @@ const createAppDocument = () =>
                         '422': errorResponse(
                             'No food recognised, or the AI estimate failed sanity checks twice'
                         ),
+                        '429': errorResponse(
+                            'Hourly or daily AI limit reached; Retry-After gives the wait in seconds'
+                        ),
                         '502': errorResponse('The AI provider failed or timed out'),
                         '503': errorResponse('The AI provider key is not configured')
                     }
@@ -533,6 +536,9 @@ const createAppDocument = () =>
                         ...commonErrors,
                         '422': errorResponse(
                             'No food recognised, or the AI estimate failed sanity checks twice'
+                        ),
+                        '429': errorResponse(
+                            'Hourly or daily AI limit reached; Retry-After gives the wait in seconds'
                         ),
                         '502': errorResponse('The AI provider failed or timed out'),
                         '503': errorResponse('The AI provider key is not configured')

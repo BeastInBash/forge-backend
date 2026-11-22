@@ -34,6 +34,9 @@ const envSchema = z.object({
     // Optional so the server boots without them; AI routes return 503 until the active one is set
     GEMINI_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
+    // Per-user AI calls allowed in a rolling hour and day (meal analyse + meal log share them)
+    AI_LIMIT_PER_HOUR: z.coerce.number().int().positive().default(20),
+    AI_LIMIT_PER_DAY: z.coerce.number().int().positive().default(60),
     // Optional so the server boots without it; password-reset emails fail with 503 until it is set
     RESEND_API_KEY: z.string().optional(),
     // Sender for auth emails. Resend's shared address only delivers to the Resend account's own
