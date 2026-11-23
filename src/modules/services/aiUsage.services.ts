@@ -2,7 +2,7 @@ import prisma from '../../lib/db';
 import { env } from '../../lib/env';
 import { checkAiLimit, DAY_MS, type AiLimitDecision } from '../../common/utils/aiRateLimit';
 
-export type AiFeature = 'meal_analyze' | 'meal_create';
+export type AiFeature = 'meal_analyze' | 'meal_create' | 'meal_photo';
 
 /**
  * Records one AI call for the user if it fits their hourly and daily limits. The count and the

@@ -18,12 +18,20 @@ export interface JsonRequest<T> {
     system: string;
     /** The user's input, passed as data. */
     prompt: string;
+    /** Photos sent with the prompt, e.g. a picture of a meal. */
+    images?: AiImage[];
     /** Shape of the answer: sent to the provider as JSON Schema, then used to validate it. */
     schema: ZodType<T>;
     /** Short identifier for the schema, e.g. `meal_nutrition` (OpenAI requires one). */
     schemaName: string;
     maxOutputTokens?: number;
     timeoutMs?: number;
+}
+
+export interface AiImage {
+    /** e.g. `image/jpeg` */
+    mimeType: string;
+    data: Buffer;
 }
 
 export interface JsonResult<T> {
@@ -43,6 +51,7 @@ interface AiProvider {
         model: string;
         system: string;
         prompt: string;
+        images: AiImage[];
         jsonSchema: Record<string, unknown>;
         schemaName: string;
         maxOutputTokens: number;
@@ -77,11 +86,30 @@ const omitKeyword = (schema: unknown, key: string): unknown => {
 const gemini: AiProvider = {
     defaultModel: 'gemini-3.5-flash-lite',
     apiKey: env.GEMINI_API_KEY,
-    async generate({ apiKey, model, system, prompt, jsonSchema, maxOutputTokens, timeoutMs }) {
+    async generate({
+        apiKey,
+        model,
+        system,
+        prompt,
+        images,
+        jsonSchema,
+        maxOutputTokens,
+        timeoutMs
+    }) {
         geminiClient ??= new GoogleGenAI({ apiKey });
         const response = await geminiClient.models.generateContent({
             model,
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        ...images.map(({ mimeType, data }) => ({
+                            inlineData: { mimeType, data: data.toString('base64') }
+                        })),
+                        { text: prompt }
+                    ]
+                }
+            ],
             config: {
                 systemInstruction: system,
                 responseMimeType: 'application/json',
@@ -119,7 +147,18 @@ const openai: AiProvider = {
                 model: args.model,
                 messages: [
                     { role: 'system', content: args.system },
-                    { role: 'user', content: args.prompt }
+                    {
+                        role: 'user',
+                        content: [
+                            { type: 'text', text: args.prompt },
+                            ...args.images.map(({ mimeType, data }) => ({
+                                type: 'image_url',
+                                image_url: {
+                                    url: `data:${mimeType};base64,${data.toString('base64')}`
+                                }
+                            }))
+                        ]
+                    }
                 ],
                 response_format: {
                     type: 'json_schema',
@@ -173,6 +212,7 @@ export const generateJson = async <T>(request: JsonRequest<T>): Promise<JsonResu
             model,
             system: request.system,
             prompt: request.prompt,
+            images: request.images ?? [],
             jsonSchema: toJsonSchema(request.schema),
             schemaName: request.schemaName,
             maxOutputTokens: request.maxOutputTokens ?? 4096,

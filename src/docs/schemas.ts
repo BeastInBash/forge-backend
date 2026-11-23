@@ -252,6 +252,17 @@ export const mealAnalysisSchema = z
     .object({ mealTime: mealTimeSchema, ...mealReportShape, unrecognized: unrecognizedSchema })
     .meta({ id: 'MealAnalysis' });
 
+export const mealPhotoFoodsSchema = z
+    .object({
+        foods: z.array(
+            z.object({
+                food: z.string().meta({ description: 'Food name, e.g. "Basmati rice"' }),
+                amount: z.string().meta({ description: 'Estimated amount, e.g. "180g cooked"' })
+            })
+        )
+    })
+    .meta({ id: 'MealPhotoFoods' });
+
 export const mealDetailSchema = z
     .object({
         id: z.uuid(),

@@ -125,3 +125,24 @@ export const aiFoodSchema = z.strictObject({
 export const aiMealSchema = z.strictObject({ items: z.array(aiFoodSchema).min(1).max(20) });
 
 export type AiFood = z.infer<typeof aiFoodSchema>;
+
+/**
+ * The foods seen in a meal photo, as a name and an amount the user can check and then log like
+ * typed foods. No nutrition here: that comes from the normal analysis when the meal is saved.
+ */
+export const aiMealPhotoSchema = z.strictObject({
+    /** False when the photo shows no food or drink */
+    isMeal: z.boolean(),
+    foods: z
+        .array(
+            z.strictObject({
+                name: z.string().min(1).max(60).meta({ description: 'Common English name' }),
+                amount: z
+                    .string()
+                    .min(1)
+                    .max(100)
+                    .meta({ description: 'Estimated amount, e.g. "180g cooked" or "2 pieces"' })
+            })
+        )
+        .max(20)
+});

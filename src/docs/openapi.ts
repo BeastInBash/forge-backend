@@ -44,6 +44,7 @@ import {
     mealDaySchema,
     mealDetailSchema,
     mealListSchema,
+    mealPhotoFoodsSchema,
     meResponseSchema,
     onboardingResponseSchema,
     profileResponseSchema,
@@ -537,6 +538,47 @@ const createAppDocument = () =>
                         '422': errorResponse(
                             'No food recognised, or the AI estimate failed sanity checks twice'
                         ),
+                        '429': errorResponse(
+                            'Hourly or daily AI limit reached; Retry-After gives the wait in seconds'
+                        ),
+                        '502': errorResponse('The AI provider failed or timed out'),
+                        '503': errorResponse('The AI provider key is not configured')
+                    }
+                }
+            },
+            '/api/v1/meals/photo': {
+                post: {
+                    tags: ['Meals'],
+                    summary: 'List the foods in a meal photo',
+                    description:
+                        'Multipart form with one `image` (PNG, JPEG or WebP, max 4 MB). The AI names each food and estimates its amount; the app shows them for the user to check, then logs them with `POST /api/v1/meals`. Nothing is saved, including the photo.',
+                    security: sessionSecurity,
+                    requestBody: {
+                        required: true,
+                        content: {
+                            'multipart/form-data': {
+                                schema: {
+                                    type: 'object',
+                                    required: ['image'],
+                                    properties: { image: { type: 'string', format: 'binary' } }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        '200': {
+                            description: 'Foods in the photo',
+                            content: {
+                                'application/json': {
+                                    schema: successResponse(
+                                        mealPhotoFoodsSchema,
+                                        'MealPhotoResponse'
+                                    )
+                                }
+                            }
+                        },
+                        ...commonErrors,
+                        '422': errorResponse('No food seen, or the AI answer was malformed twice'),
                         '429': errorResponse(
                             'Hourly or daily AI limit reached; Retry-After gives the wait in seconds'
                         ),

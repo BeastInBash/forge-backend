@@ -5,7 +5,8 @@ import {
     deleteMealService,
     getMealDayService,
     getMealService,
-    listMealsService
+    listMealsService,
+    recognizeMealPhotoService
 } from '../services/meal.services';
 import ApiResponses from '../../common/libs/ApiResponses';
 import {
@@ -20,6 +21,13 @@ export const analyzeMeal = async (req: Request, res: Response) => {
     // req.body was validated by validateBody(analyzeMealBodySchema)
     const data = await analyzeMealService(req.body as AnalyzeMealBody);
     return ApiResponses.ok(res, 'Meal analysed', data);
+};
+
+export const recognizeMealPhoto = async (req: Request, res: Response) => {
+    // requireMealPhoto made sure uploadImage parsed a file into req.file
+    const { mimetype, buffer } = req.file!;
+    const data = await recognizeMealPhotoService({ mimeType: mimetype, data: buffer });
+    return ApiResponses.ok(res, 'Foods in the photo', data);
 };
 
 export const createMeal = async (req: Request, res: Response) => {
