@@ -6,7 +6,7 @@
 
 const CONTACT_EMAIL = 'saifdev0847@gmail.com';
 const DEVELOPER = 'Mohammad Saif';
-const UPDATED = '11 October 2026';
+const UPDATED = '23 November 2026';
 
 const layout = (title: string, body: string) => `<!doctype html>
 <html lang="en">
@@ -59,21 +59,37 @@ name, email address and profile photo from Google.</li>
 weight and fitness goal. Every one of these is optional.</li>
 <li><strong>Fitness activity</strong>: your workout plans and the sets, reps and weights you
 log.</li>
-<li><strong>Meals</strong>: the foods and amounts you type in, when you ate them, and the
+<li><strong>Meals</strong>: the foods and amounts you log, when you ate them, and the
 nutrition estimates calculated for them.</li>
+<li><strong>Meal photos</strong>, only if you choose to log a meal from a photo. The photo is
+sent to the AI service (see below) to list the foods in it, then discarded: it is not stored on
+Forge's server or in its database. Only the foods you then save are kept, like a typed meal.</li>
+<li><strong>Water</strong>: your daily water goal, reminder times, time zone, and the drinks you
+log.</li>
+<li><strong>Notification token</strong>: if you allow notifications, a push token for your
+device, so Forge can send your water reminders. It is removed when you sign out.</li>
+<li><strong>AI usage</strong>: the time and type of each AI request (such as a meal estimate),
+to enforce fair-use limits.</li>
 <li><strong>Sign-in sessions</strong>: for each device you are signed in on, the IP address,
 device/browser description and sign-in time, so you can see your active sessions and so the
 service can be kept secure.</li>
+<li><strong>Crash reports</strong>: if the app crashes or hits an error, a report with technical
+details (the error, app version, device model and operating system) and your Forge user ID. It
+does not include your name, email, IP address or what you logged.</li>
 </ul>
-<p>Forge does not collect your location, contacts, or advertising identifiers, does not use
-analytics or advertising SDKs, and does not read your photos. (Photo access is only used by the
-app's administrator to add pictures to the shared exercise catalog.)</p>
+<p>Your workout in progress is kept on your device until you log its sets.</p>
+<p>Forge does not collect your location, contacts, or advertising identifiers, and does not use
+analytics or advertising SDKs. The camera and your photo library are used only when you choose to
+add a meal photo (or, for the app's administrator, a picture to the shared exercise
+catalog); Forge never reads your photos in the background.</p>
 
 <h2>How it is used</h2>
 <ul>
-<li>To provide the app: keep you signed in, save and show your plans, lifts and meals, and
-calculate your progress and nutrition.</li>
-<li>To keep the service secure and fix problems.</li>
+<li>To provide the app: keep you signed in, save and show your plans, lifts, meals and water,
+and calculate your progress and nutrition.</li>
+<li>To send the water reminders you set up, and emails you ask for, such as a password reset
+code.</li>
+<li>To keep the service secure, limit misuse of the AI features, and fix problems.</li>
 </ul>
 <p>Your data is not sold, not used for advertising, and not used to build profiles about you.</p>
 
@@ -82,10 +98,16 @@ calculate your progress and nutrition.</li>
 <ul>
 <li><strong>Vercel</strong> hosts the Forge server.</li>
 <li><strong>Neon</strong> hosts the database where your account and activity are stored.</li>
-<li><strong>Google (Gemini API)</strong>: when you log a meal, the food names and amounts you
-typed are sent to Google's Gemini AI to estimate their nutrition. Nothing else about you, such as
-your name or email, is sent with them.</li>
+<li><strong>Google (Gemini API)</strong>: when you log a meal, the food names and amounts are
+sent to Google's Gemini AI to estimate their nutrition, and when you use a meal photo, the photo
+is sent to it to list the foods. Nothing else about you, such as your name or email, is sent
+with them.</li>
 <li><strong>Google Sign-In</strong>, only if you choose to sign in with Google.</li>
+<li><strong>Expo</strong> (and through it Google Firebase Cloud Messaging or Apple Push
+Notification service) delivers push notifications, using your device's notification token.</li>
+<li><strong>Resend</strong> sends account emails, such as password reset codes, to your email
+address.</li>
+<li><strong>Sentry</strong> receives the crash reports described above.</li>
 <li><strong>Cloudinary</strong> stores and serves the images in the shared exercise catalog. It
 does not receive your personal data.</li>
 </ul>
@@ -98,9 +120,11 @@ kept in the device's secure storage. Passwords are stored only as hashes.</p>
 <h2>How long it is kept, and deleting it</h2>
 <p>Your data is kept for as long as you have an account. You can delete your account at any time
 in the app under <strong>Profile → Delete account</strong>. This immediately and permanently
-deletes your account, sessions, profile details, workout plans, lift logs and meals. Exercises
-you added to the shared catalog stay available to others but are no longer linked to you.
-If you can't use the app, see <a href="/delete-account">how to request deletion</a>.</p>
+deletes your account, sessions, profile details, workout plans, lift logs, meals, water goal and
+logs, notification tokens and AI usage records. Exercises you added to the shared catalog stay
+available to others but are no longer linked to you. Crash reports are kept by Sentry for up to
+90 days and then deleted. If you can't use the app, see
+<a href="/delete-account">how to request deletion</a>.</p>
 
 <h2>Your rights</h2>
 <p>You can see your details in the app's Profile tab, change your onboarding answers, and delete
@@ -141,6 +165,8 @@ a reply confirming it.</p>
 <li>Your profile details: age, height, weight and goal</li>
 <li>All your sign-in sessions</li>
 <li>All your workout plans, lift logs and meals</li>
+<li>Your water goal, water logs and notification tokens</li>
+<li>Your AI usage records</li>
 </ul>
 <p>Everything is deleted permanently; nothing is kept afterwards. Exercises you added to the
 shared exercise catalog stay available to other users but are no longer linked to you.</p>
