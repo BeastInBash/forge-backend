@@ -85,10 +85,20 @@ export const listExerciseLiftsService = async (userId: string, exerciseId: strin
 };
 
 export const createLiftService = async (body: LiftBodyInput, userId: string) => {
+    // A repeat of a save that already arrived (the app's offline queue resends after a lost
+    // answer) returns the saved lift instead of a second one
+    if (body.id) {
+        const saved = await prisma.lift_Log.findFirst({
+            where: { id: body.id, userId },
+            include: liftInclude
+        });
+        if (saved) return saved;
+    }
     const exists = await prisma.exercise.count({ where: { id: body.exerciseId } });
     if (!exists) throw ApiError.badRequest('That exercise does not exist');
     return prisma.lift_Log.create({
         data: {
+            ...(body.id ? { id: body.id } : {}),
             performedAt: body.performedAt,
             note: body.note || null,
             user: { connect: { id: userId } },

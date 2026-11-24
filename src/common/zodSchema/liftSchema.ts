@@ -12,6 +12,11 @@ export const liftSetSchema = z
 /** The JSON body for logging one exercise from one session. */
 export const liftBodySchema = z
     .strictObject({
+        /**
+         * Optional id chosen by the app, so a save it sends again (offline queue) can't create a
+         * second row: a repeat with the same id answers with the lift already saved.
+         */
+        id: z.uuid().optional(),
         exerciseId: z.uuid(),
         /** ISO 8601 string — when the lift was performed. */
         performedAt: z.iso.datetime({ offset: true }),

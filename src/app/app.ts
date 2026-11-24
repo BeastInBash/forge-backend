@@ -3,6 +3,7 @@ import { env } from '../lib/env';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
 import cors from 'cors';
 import { auth } from '../lib/auth';
+import prisma from '../lib/db';
 import workoutRouter from '../modules/routes/workouts';
 import exerciseRoute from '../modules/routes/exercise';
 import profileRouter from '../modules/routes/profile';
@@ -41,6 +42,15 @@ export const createApplication = () => {
     app.get('/health', (req, res) => {
         res.send(`Server Listening on PORT ${env.PORT}`);
     });
+    // Runs one tiny query, so a scheduler pinging it every few minutes keeps Neon from
+    // suspending (its wake-up adds ~7 s to the next request)
+    app.get(
+        '/health/db',
+        asyncHandler(async (_req, res) => {
+            await prisma.$queryRaw`SELECT 1`;
+            res.json({ success: true, message: 'Database is up' });
+        })
+    );
     app.use('/api/v1/workout', workoutRouter);
     app.use('/api/v1/exercise', exerciseRoute);
     app.use('/api/v1/profile', profileRouter);

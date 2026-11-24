@@ -50,6 +50,13 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: 'postgresql'
     }),
+    session: {
+        // Keeps a signed copy of the session in a short-lived cookie, so `requireAuth` doesn't
+        // ask the database on every request (one round trip less, and none to a sleeping Neon).
+        // A session revoked elsewhere (sign-out, password reset) keeps working here for up to
+        // `maxAge` until the cookie is checked against the database again.
+        cookieCache: { enabled: true, maxAge: 5 * 60 }
+    },
     emailAndPassword: {
         enabled: true,
         // A reset signs out every device, in case the old password was the reason for it.

@@ -125,6 +125,32 @@ const createAppDocument = () =>
                     }
                 }
             },
+            '/health/db': {
+                get: {
+                    tags: ['System'],
+                    summary: 'Database health check',
+                    description:
+                        'Runs `SELECT 1`. Pinged every few minutes by a scheduler so the Neon ' +
+                        'database never suspends.',
+                    responses: {
+                        '200': {
+                            description: 'Database is up',
+                            content: {
+                                'application/json': {
+                                    schema: {
+                                        type: 'object',
+                                        properties: {
+                                            success: { type: 'boolean' },
+                                            message: { type: 'string' }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        '500': { description: 'The database could not be reached' }
+                    }
+                }
+            },
             '/api/me': {
                 get: {
                     tags: ['System'],

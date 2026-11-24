@@ -42,6 +42,11 @@ export type WaterGoalBody = z.infer<typeof waterGoalBodySchema>;
 /** The JSON body for `POST /api/v1/water/logs`: one drink. */
 export const waterLogBodySchema = z
     .strictObject({
+        /**
+         * Optional id chosen by the app, so a drink it sends again (offline queue) can't be
+         * counted twice: a repeat with the same id answers with the drink already saved.
+         */
+        id: z.uuid().optional(),
         amountMl: z.int().min(10).max(3000),
         /** When it was drunk; defaults to now. ISO 8601 with offset. */
         drankAt: z.iso

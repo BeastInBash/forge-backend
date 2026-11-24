@@ -64,15 +64,26 @@ export const getWaterDayService = async (userId: string, query: WaterDayQuery) =
     };
 };
 
-export const createWaterLogService = async (body: WaterLogBody, userId: string) =>
-    prisma.water_Log.create({
+export const createWaterLogService = async (body: WaterLogBody, userId: string) => {
+    // A repeat of a drink that already arrived (the app's offline queue resends after a lost
+    // answer) returns the saved drink instead of counting it twice
+    if (body.id) {
+        const saved = await prisma.water_Log.findFirst({
+            where: { id: body.id, userId },
+            select: logSelect
+        });
+        if (saved) return saved;
+    }
+    return prisma.water_Log.create({
         data: {
+            ...(body.id ? { id: body.id } : {}),
             amountMl: body.amountMl,
             drankAt: body.drankAt ?? new Date(),
             user: { connect: { id: userId } }
         },
         select: logSelect
     });
+};
 
 export const deleteWaterLogService = async (logId: string, userId: string) => {
     // Scoped to the owner, so another user's id reads as "not found"
