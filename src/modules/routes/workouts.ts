@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { requireAuth } from '../../common/middleware/auth.middleware';
 import { validateBody, validateParams } from '../../common/middleware/validate.middleware';
 import { asyncHandler } from '../../common/utils/asyncHandler';
-import { workoutBodySchema, workoutIdParamsSchema } from '../../common/zodSchema/workoutSchema';
+import {
+    createWorkoutBodySchema,
+    workoutBodySchema,
+    workoutIdParamsSchema
+} from '../../common/zodSchema/workoutSchema';
 import {
     createWorkout,
     deleteWorkout,
@@ -17,7 +21,7 @@ workoutRouter.get('/', requireAuth, asyncHandler(listWorkouts));
 workoutRouter.post(
     '/create-workout',
     requireAuth,
-    validateBody(workoutBodySchema),
+    validateBody(createWorkoutBodySchema),
     asyncHandler(createWorkout)
 );
 

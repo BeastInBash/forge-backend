@@ -8,7 +8,11 @@ import {
 import ApiError from '../../common/libs/ApiError';
 import ApiResponses from '../../common/libs/ApiResponses';
 import { isAdmin } from '../../common/middleware/auth.middleware';
-import type { WorkoutBodyInput, WorkoutIdParams } from '../../common/zodSchema/workoutSchema';
+import type {
+    CreateWorkoutBodyInput,
+    WorkoutBodyInput,
+    WorkoutIdParams
+} from '../../common/zodSchema/workoutSchema';
 
 /** Typed-in exercise names are added to the catalog, so only admins may send them. */
 const assertCatalogPicks = (body: WorkoutBodyInput, res: Response) => {
@@ -19,8 +23,8 @@ const assertCatalogPicks = (body: WorkoutBodyInput, res: Response) => {
 };
 
 export const createWorkout = async (req: Request, res: Response) => {
-    // req.body was validated by validateBody(workoutBodySchema)
-    const body = req.body as WorkoutBodyInput;
+    // req.body was validated by validateBody(createWorkoutBodySchema)
+    const body = req.body as CreateWorkoutBodyInput;
     assertCatalogPicks(body, res);
     const data = await createWorkoutService({ ...body, userId: res.locals.session.session.userId });
     return ApiResponses.create(res, 'workout Created', data);

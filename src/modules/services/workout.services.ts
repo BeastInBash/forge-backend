@@ -108,12 +108,22 @@ const resolveExercises = async (exercises: WorkoutBodyInput['exercises'], userId
 
 // Expects a payload already validated by workoutBodySchema plus the session userId
 export const createWorkoutService = async (parsedBody: WorkoutInput) => {
+    // A repeat of a save that already arrived (the app's offline queue resends after a lost
+    // answer) returns the saved plan instead of a day clash
+    if (parsedBody.id) {
+        const saved = await prisma.workout_Plan.findFirst({
+            where: { id: parsedBody.id, userId: parsedBody.userId },
+            include: planInclude
+        });
+        if (saved) return saved;
+    }
     const [, rows] = await Promise.all([
         assertDayFree(parsedBody.userId, parsedBody.day),
         resolveExercises(parsedBody.exercises, parsedBody.userId)
     ]);
     return prisma.workout_Plan.create({
         data: {
+            ...(parsedBody.id ? { id: parsedBody.id } : {}),
             day: parsedBody.day,
             time: parsedBody.time,
             muscle_group: parsedBody.muscle_group,

@@ -4,6 +4,7 @@ import { auth } from '../lib/auth';
 import { env } from '../lib/env';
 import {
     createExercisesBodySchema,
+    createWorkoutBodySchema,
     exerciseIdParamsSchema,
     updateExerciseBodySchema,
     workoutBodySchema,
@@ -314,11 +315,11 @@ const createAppDocument = () =>
                     tags: ['Workouts'],
                     summary: 'Create a workout plan',
                     description:
-                        'Each exercise is either a catalog pick (`exerciseId`) or, for admins only, a new one (`exercise_name`); new names are added to the catalog, or matched to an existing entry case-insensitively. The same exercise may appear only once per plan.',
+                        'Each exercise is either a catalog pick (`exerciseId`) or, for admins only, a new one (`exercise_name`); new names are added to the catalog, or matched to an existing entry case-insensitively. The same exercise may appear only once per plan. An optional `id` chosen by the app makes the call safe to repeat: a plan with that id already saved is returned as is.',
                     security: sessionSecurity,
                     requestBody: {
                         required: true,
-                        content: { 'application/json': { schema: workoutBodySchema } }
+                        content: { 'application/json': { schema: createWorkoutBodySchema } }
                     },
                     responses: {
                         '201': {

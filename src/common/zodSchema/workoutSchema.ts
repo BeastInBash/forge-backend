@@ -64,7 +64,7 @@ export const exerciseSchema = z
     .union([existingExerciseSchema, newExerciseSchema])
     .meta({ id: 'WorkoutExerciseInput' });
 
-/** The JSON body the client POSTs. */
+/** The JSON body the client PUTs to replace a plan. */
 export const workoutBodySchema = z
     .strictObject({
         day: z.enum(WEEKDAYS),
@@ -73,14 +73,25 @@ export const workoutBodySchema = z
         muscle_group: z.string().trim().min(1).max(60),
         exercises: z.array(exerciseSchema).min(1)
     })
+    .meta({ id: 'WorkoutBody' });
+
+/** The JSON body the client POSTs to create a plan. */
+export const createWorkoutBodySchema = workoutBodySchema
+    .extend({
+        /**
+         * Optional id chosen by the app, so a save it sends again (offline queue) can't create a
+         * second plan: a repeat with the same id answers with the plan already saved.
+         */
+        id: z.uuid().optional()
+    })
     .meta({ id: 'CreateWorkoutBody' });
 
 /**
  * What the service receives: the body plus the userId the controller injects
- * from the session. Validate `req.body` with `workoutBodySchema` so a client
+ * from the session. Validate `req.body` with `createWorkoutBodySchema` so a client
  * can never supply `userId`.
  */
-export const workoutSchema = workoutBodySchema.extend({
+export const workoutSchema = createWorkoutBodySchema.extend({
     userId: z.string().min(1)
 });
 
@@ -88,6 +99,7 @@ export type ExistingExerciseInput = z.infer<typeof existingExerciseSchema>;
 export type NewExerciseInput = z.infer<typeof newExerciseSchema>;
 export type ExerciseInput = z.infer<typeof exerciseSchema>;
 export type WorkoutBodyInput = z.infer<typeof workoutBodySchema>;
+export type CreateWorkoutBodyInput = z.infer<typeof createWorkoutBodySchema>;
 export type WorkoutInput = z.infer<typeof workoutSchema>;
 
 /**
